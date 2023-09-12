@@ -1,0 +1,22 @@
+#search {
+    padding-bottom: 0px;
+    padding-right: 10px;
+    .input-group {
+        flex-wrap: nowrap;
+        
+    }
+/*     input {
+        width: 33ch;
+        border: 1.25px solid black;
+        background-color: #cccdcf;
+    
+    } */
+    input:focus {
+        box-shadow: none !important;
+    }
+    button {
+        color: white;
+        background-color: #e82074;
+        border: 1.25px solid #0b0c0c;
+    }
+}
