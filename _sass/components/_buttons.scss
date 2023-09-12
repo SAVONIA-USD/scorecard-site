@@ -1,0 +1,8 @@
+.btn-primary, .btn-download { 
+    background-color: $button-color !important;
+    box-shadow: none !important;
+}
+
+.btn-download:hover, .btn-primary:hover {
+    background-color: $button-color-hover !important;
+}
