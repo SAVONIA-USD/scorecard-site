@@ -1,0 +1,25 @@
+{% if page.indicator.related_targets %}
+    {% assign related_targets = "" | split: "," %}
+    {% for target in page.indicator.related_targets %}
+        {% assign related_targets = related_targets | push: target %}
+    {% endfor %}
+
+    {% assign related_targets_by_goal = related_targets | group_by: 'goal_number' %}
+    {% for group in related_targets_by_goal %}
+        <h2 class="related-target-goal" id="related-goal-{{ group.name }}">{{ page.t.general.goal }} {{ group.name }}: {{ group.items[0].goal_name }}</h2>
+        <ul aria-labelledby="related-goal-{{ group.name }}">
+        {% for target in group.items %}
+            <li>
+                <div class="row">
+                    <div class="col col-auto">{{ target.number }}:</div>
+                    <div class="col">{{ target.name }}</div>
+                </div>
+            </li>
+        {% endfor %}
+        </ul>
+    {% endfor %}
+{% else %}
+        {% if include.placeholder and include.placeholder != '' %}
+        <div class="empty-metadata-placeholder">{{ include.placeholder | t | markdownify }}</div>
+        {% endif %}
+{% endif %}

@@ -7,3 +7,9 @@
     margin: 20px 0;
   }
 }
+
+body.contrast-high {
+  .frontpage-goals-grid {
+    border-color: $color-light-highContrast !important;
+  }
+}
