@@ -13,8 +13,15 @@
 
 //Menu nav-bar
 .header-nav { 
-  background: linear-gradient(90deg, #f487b2 0%, #e82074 80%);
+  background: linear-gradient(90deg, #f487b2 0%, #EF5E99 50%, #e82074 80%);
   box-shadow: 5px 5px 5px 0px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.contrast-high   {
+  .header-nav { 
+    background: $color-light-highContrast !important;
+    box-shadow: none !important;
+  }
 }
 
 #menu {

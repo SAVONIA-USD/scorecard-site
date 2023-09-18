@@ -191,10 +191,10 @@ metadata_tabs:
   # - scope: sources
   #   title: indicator.sources
   #   description: ''
-  - scope: related_indicators
+  - scope: related_targets
     title: Related targets
     description: Other related targets to this indicator
-    placeholder: There are no other targets related to this one
+    placeholder: There are no other targets related to this indicator
 news:
   category_links: false
 progress_status:

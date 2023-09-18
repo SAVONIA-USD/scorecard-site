@@ -1,5 +1,5 @@
 .back-to-top {
-  background-color: #e82074;
+  background-color: #EF5E99;
   padding: 5px;
   display: inline-flex;
   color: white;
@@ -9,6 +9,13 @@
   width: 150px;
   svg {
    margin-right: 7px;
+  }
+}
+
+body.contrast-high {
+  .back-to-top {
+    color: $color-dark-highContrast !important;
+    background-color: $color-light-highContrast !important;
   }
 }
 
