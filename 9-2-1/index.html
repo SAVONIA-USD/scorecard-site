@@ -146,7 +146,7 @@ var translations = {
         <link res="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
         <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" crossorigin="">
         <link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/3.2.3/css/fixedColumns.dataTables.min.css" crossorigin="">
-        <link rel="stylesheet" href="/scorecard-site/assets/css/style.css?v=20230918153321">
+        <link rel="stylesheet" href="/scorecard-site/assets/css/style.css?v=20230918153729">
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
           integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
           crossorigin=""/>
@@ -512,9 +512,9 @@ data-event-label="Change to indicator.national_metadata tab"
                 type="button"
                 class="nav-link "
                 data-bs-toggle="tab"
-                id="tab-related_indicators"
-                data-bs-target="#related_indicators"
-                aria-controls="related_indicators"
+                id="tab-related_targets"
+                data-bs-target="#related_targets"
+                aria-controls="related_targets"
                 role="tab"
                 data-on="click"
 data-event-category="Tab change"
@@ -534,6 +534,7 @@ data-event-label="Change to Related targets tab"
 
 <div class="tab-content">
     
+        
         
         
         
@@ -908,16 +909,36 @@ data-event-label="Change to Related targets tab"
         
         
         
-        <div role="tabpanel" class="tab-pane " id="related_indicators">
+        
+        <div role="tabpanel" class="tab-pane " id="related_targets">
             <article>
-                
+                <p>Other related targets to this indicator</p>
 
                 
     
-    <div class="empty-metadata-placeholder"><p>There are no other targets related to this one</p>
-</div>
     
 
+    
+    
+        <h2 class="related-target-goal" id="related-goal-9">Goal 9: Industry, innovation and infrastructure</h2>
+        <ul aria-labelledby="related-goal-9">
+        
+            <li>
+                <div class="row">
+                    <div class="col col-auto">9.4:</div>
+                    <div class="col">By 2030, upgrade infrastructure and retrofit industries to make them sustainable, with increased resource-use efficiency and greater adoption of clean and environmentally sound technologies and industrial processes, with all countries taking action in accordance with their respective capabilities</div>
+                </div>
+            </li>
+        
+            <li>
+                <div class="row">
+                    <div class="col col-auto">9.5:</div>
+                    <div class="col">Enhance scientific research, upgrade the technological capabilities of industrial sectors in all countries, in particular developing countries, including, by 2030, encouraging innovation and substantially increasing the number of research and development workers per 1 million people and public and private research and development spending</div>
+                </div>
+            </li>
+        
+        </ul>
+    
 
             </article>
         </div>
@@ -1022,12 +1043,12 @@ data-event-label="Change to Related targets tab"
 <script>translations['search'] = translations['search'] || {};
     translations['search']['search'] = 'Search';</script>
 
-<script src='/scorecard-site/assets/js/sdg.js?v=20230918153321'></script>
+<script src='/scorecard-site/assets/js/sdg.js?v=20230918153729'></script>
 
 
     
     
-    <script src="/scorecard-site/assets/js/custom.js?v=20230918153321"></script><script>
+    <script src="/scorecard-site/assets/js/custom.js?v=20230918153729"></script><script>
     new indicatorInit();
     new accessibilitySwitcher();
 </script>
