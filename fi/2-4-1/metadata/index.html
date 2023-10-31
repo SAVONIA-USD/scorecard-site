@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="fi" class="no-js">
+    <head>
+        <meta charset="utf-8">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
+        <script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=Promise%2CArray.prototype.forEach%2CString.prototype.includes%2CURLSearchParams%2CCustomEvent%2CArray.prototype.includes%2CArray.prototype.filter%2CArray.prototype.some%2CArray.prototype.find%2CArray.prototype.reduce%2CObject.assign%2CArray.isArray%2CObject.values%2CObject.entries%2CArray.from%2CSet%2CArray.prototype.findIndex%2Cfetch"></script>
+<script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/javascript-canvas-to-blob/3.15.0/js/canvas-to-blob.min.js"></script>
+
+        <script>
+// This is where we initialise any global variables, namespaced in "opensdg".
+var opensdg = {
+
+  // A base URL for asynchronous calls to SDG data.
+  remoteDataBaseUrl: 'https://savonia-usd.github.io/scorecard-data/fi',
+
+  chartConfigAlterations: [],
+  // A hook which can be used to modify the configuration for Chart.js.
+  chartConfigAlter: function(callback) {
+    this.chartConfigAlterations.push(callback);
+  },
+
+  tableConfigAlterations: [],
+  // A hook which can be used to modify the configuration for Datatables.
+  tableConfigAlter: function(callback) {
+    this.tableConfigAlterations.push(callback);
+  },
+
+  // A hook which can be replaced to alter whether/how the values that are
+  // displayed on indicator tables/graphs get rounded. A "context" parameter
+  // is also passed which contains additional information.
+  dataRounding: function(value, context) {
+    // Alterations go here.
+    return value;
+  },
+
+  // A hook which can be used to alter the data before it is displayed on charts/tables.
+  dataDisplayAlterations: [],
+  dataDisplayAlter: function(callback) {
+    this.dataDisplayAlterations.push(callback);
+  },
+
+  // Disaggregations which should be ignored on indicator pages.
+  ignoredDisaggregations: null,
+
+  language: 'fi',
+
+  mapColors: {
+    "default": [
+        "#c4e1c6",
+        "#b0d1b3",
+        "#9bc2a1",
+        "#87b28f",
+        "#74a37c",
+        "#60946b",
+        "#4d8559",
+        "#3a7747",
+        "#276836"
+    ]
+},
+};
+
+</script>
+
+        <script>
+// JavaScript container for translation data.
+var translations = {
+  //Javascript version of the "t" filter from jekyll-open-sdg-plugins.
+  t: function(key) {
+
+    if (!key || typeof key !== 'string') {
+      return '';
+    }
+
+    // The majority of uses of this function are to translate disaggregation
+    // data. To spare data providers of needing to enter "data." in front of
+    // their disaggregation data, we specifically look for that here.
+    if (typeof this.data === 'object' && this.data !== null && this.data[key]) {
+      return this.data[key];
+    }
+
+    var originalKey = key;
+    var drilled = this;
+    var levelsDrilled = 0;
+    var levels = key.split('.');
+
+    for (var level in levels) {
+      // If we have drilled down to soon, abort.
+      if (typeof drilled !== 'object') {
+        break;
+      }
+
+      if (levels[level] in drilled) {
+        drilled = drilled[levels[level]];
+        levelsDrilled += 1;
+      }
+    }
+
+    // If we didn't drill the right number of levels, return the original string.
+    if (levels.length != levelsDrilled) {
+      return originalKey;
+    }
+
+    // Otherwise we must have drilled all the way.
+    return drilled;
+  },
+};
+</script>
+
+        <!-- Basic Page Needs
+        ================================================== -->
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"><!-- Mobile Specific Metas
+        ================================================== -->
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- Title and meta description
+        ================================================== -->
+
+        
+    <title>Muokkaa Metadataa: 2.4.1 - Kestävän kehityksen tavoitteiden indikaattorit</title>
+
+
+
+        
+        <meta name="robots" content="noindex, nofollow">
+        
+
+        <!--[if IE 9]>
+        <script src="/scorecard-site/assets/js/lib/classList.js"></script>
+        <![endif]-->
+
+        <link rel="apple-touch-icon" sizes="180x180" href="/scorecard-site/assets/img/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/scorecard-site/assets/img/favicons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/scorecard-site/assets/img/favicons/favicon-16x16.png">
+<link rel="icon" type="image/x-icon" href="/scorecard-site/assets/img/favicons/favicon.ico" />
+
+        
+
+        
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <link res="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" crossorigin="">
+        <link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/3.2.3/css/fixedColumns.dataTables.min.css" crossorigin="">
+        <link rel="stylesheet" href="/scorecard-site/assets/css/style.css?v=20231031172334">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+          integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+          crossorigin=""/>
+        <link rel="stylesheet" href="https://cdn.rawgit.com/socib/Leaflet.TimeDimension/master/dist/leaflet.timedimension.control.min.css"  crossorigin=""/>
+        <link rel="stylesheet" href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css'  crossorigin=""/>
+        <link rel="stylesheet" href="https://bowercdn.net/c/leaflet.zoomhome-latest/dist/leaflet.zoomhome.css"  crossorigin=""/>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-search@2.9.7/dist/leaflet-search.min.css" crossorigin="">
+        <link rel="stylesheet" href="https://cdn.kiprotect.com/klaro/v0.7/klaro.min.css" crossorigin=""/>
+        
+
+        
+
+
+        <!--[if IE]>
+        <link rel="stylesheet" href="/scorecard-site/assets/css/ie.css">
+        <![endif]-->
+
+        
+
+    </head>
+<body class="language-fi
+layout-config-builder
+">
+<!-- <div class="container"> -->
+
+<script>translations['header'] = {"alpha":"Alpha","default_contrast":"Oletuskontrasti","disable_high_contrast":"Poista korkea kontrasti käytöstä","disclaimer":"Tämä on kehityssivusto. Toivotamme tervetulleeksi <a href=\"mailto:%email_contacts.suggestions\">feedback</a>.","enable_high_contrast":"Ota suuri kontrasti käyttöön","hide_menu":"Piilota navigointivalikko","high_contrast":"Korkea kontrasti","internet_explorer_message":"Olemme havainneet, että käytät Internet Exploreria vieraillaksesi tällä sivustolla. Microsoft on nyt poistamassa Internet Explorerin käytöstä. Tämän seurauksena tämä sivusto ei enää tue mitään Internet Explorerin versiota. Jotkut tämän sivuston ominaisuudet eivät toimi. Käytä nykyaikaista selainta, kuten Edge, Chromea, Firefoxia tai Safaria. Jos sinulla on vaikeuksia toisen selaimen asentamisessa tai käyttäminen, ota yhteyttä IT-tukitiimiisi.","internet_explorer_message_title":"Tätä Internet-selainta ei enää tueta","logo_title":"Mene kotisivulle","show_menu":"Näytä navigointivalikko","skip_link":"Siirry pääsisältöön","tag_line":"17 tavoitetta maailman muuttamiseksi","toggle_menu":"Valikon vaihto. Laajenna tai kutista valikko napsauttamalla.","toggle_search":"Haun kytkin. Napsauta laajentaaksesi tai kutistaaksesi hakupalkkia."};</script>
+
+<a class="sr-only-focusable" id="skiplink" href="#main-content" tabindex="0">Siirry pääsisältöön</a>
+<div class="container internet-explorer-message">
+    <h2 class="internet-explorer-message-title">Tätä Internet-selainta ei enää tueta</h2>
+    <p class="internet-explorer-message-body">Olemme havainneet, että käytät Internet Exploreria vieraillaksesi tällä sivustolla. Microsoft on nyt poistamassa Internet Explorerin käytöstä. Tämän seurauksena tämä sivusto ei enää tue mitään Internet Explorerin versiota. Jotkut tämän sivuston ominaisuudet eivät toimi. Käytä nykyaikaista selainta, kuten Edge, Chromea, Firefoxia tai Safaria. Jos sinulla on vaikeuksia toisen selaimen asentamisessa tai käyttäminen, ota yhteyttä IT-tukitiimiisi.</p>
+</div>
+<!-- <div id="disclaimer">
+    
+</div> -->
+
+<header role="banner" class="">
+    <a class="logo" href="/scorecard-site/fi/" id="home" aria-label="Mene kotisivulle" title="Mene kotisivulle">
+    <img src="/scorecard-site/assets/img/SDG_logo.png" alt="Kestävän kehityksen tavoitteet - 17 tavoitetta maailman muuttamiseksi" />
+</a>
+    <div class="header-nav">
+        <div class="container">
+            <nav class="sticky navbar-expand-lg navbar-light flex-wrap align-items-start">
+                <div class="d-flex justify-content-between align-items-center">
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarSupportedContent" aria-controls="#navbarSupportedContent"
+                        aria-expanded="false" aria-label="Näytä navigointivalikko">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav" id="menu"><li class="nav-item ">
+    <a class="nav-link" href="/scorecard-site/fi/goals">Tavoitteet</a>
+</li><li class="nav-item ">
+    <a class="nav-link" href="/scorecard-site/fi/reporting-status">Raportoinnin tila</a>
+</li><li class="nav-item ">
+    <a class="nav-link" href="/scorecard-site/fi/about">Yleistä</a>
+</li></ul>
+    
+                    </div>
+                    <div class="search-bar">
+                        <form class="align-self-lg-end" id="search" action="/scorecard-site/fi/search/">
+    <div class="input-group">
+        <label class="visually-hidden" for="indicator_search">Haku</label>
+        <input class="form-control" type="search" name="q" id="indicator_search" title="Haku">
+        <span class="input-group-append">
+            <button class="btn btn-outline-secondary ms-n5" aria-label="Sivustohaku" id="search-btn" type="submit">
+                <i class="fa fa-search"></i>
+            </button>
+        </span>
+    </div>
+</form>
+
+                    </div>
+                    <div class="header-toggles d-flex align-items-center">
+
+
+
+
+
+  <div class="language-toggle-container">
+  
+  <div class="btn-group language-toggle-dropdown  dropdown">
+    <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      <i class="fa fa-globe"></i>
+      Suomi
+    </button>
+    <ul class="dropdown-menu"><li>
+            <a class="dropdown-item" href="/scorecard-site/2-4-1/metadata/">
+              Englanti
+            </a>
+          </li></ul>
+  </div>
+</div>
+
+
+
+                        <span class="no-js-language-toggle"><div class="language-toggle-container d-flex">
+    <i class="fa fa-globe language-toggle-globe-links"></i>
+    <ul class="language-toggle-links list-unstyled list-inline"><li class="language-option-en list-inline-item">
+            <a class="language-toggle-link" href="/scorecard-site/2-4-1/metadata/">
+                Englanti
+            </a>
+        </li></ul>
+</div></span><a title="Ota suuri kontrasti käyttöön" aria-label="Ota suuri kontrasti käyttöön"
+    data-contrast-switch-to="" href="javascript:void(0)" data-on="click"
+data-event-category="Accessibility"
+data-event-action="Change contrast setting"
+data-event-label="high"
+>A</a>
+                    </div>
+                </div>
+                <div class="collapse navbar-collapse" id="navbarSupportedContentMovi">
+                    <ul class="navbar-nav" id="menu"><li class="nav-item ">
+    <a class="nav-link" href="/scorecard-site/fi/goals">Tavoitteet</a>
+</li><li class="nav-item ">
+    <a class="nav-link" href="/scorecard-site/fi/reporting-status">Raportoinnin tila</a>
+</li><li class="nav-item ">
+    <a class="nav-link" href="/scorecard-site/fi/about">Yleistä</a>
+</li></ul>
+    
+                </div>
+            </nav>
+        </div>
+    </div>
+</header>
+<div id="top" tabindex=-1></div>
+
+<div id="main-content" class="container" role="main">
+  <div class="row">
+    <div class="col-md-12"><h1>Muokkaa Metadataa: 2.4.1</h1></div>
+  </div>
+  <div class="config-widgets row">
+    <div class="col-md-6" id="search_holder">
+      <label for="config-search">Filter settings</label>
+      <input id="config-search" />
+      <input id="config-search-button" type="button" value="Filter">
+      <input id="config-reset-button" type="button" value="Reset">
+    </div>
+    <div class="col-md-6" id="button_holder">
+      <button class="config-download-button btn btn-primary btn-download" id="export">Download configuration</button>
+      
+      
+      
+      
+      
+      <a class="config-repository-button btn btn-primary btn-download" target="_blank" href="https://github.com/SAVONIA-USD/scorecard-data/tree/develop/meta">
+        Go to repository
+      </a>
+      
+    </div>
+  </div>
+  <div class="row" id="results-status" role="status"></div>
+  <div class="row" id="editor_holder"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@2.6.1/dist/jsoneditor.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@3.14.0/dist/js-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/g/filesaver.js"></script>
+  <script>
+    // For this page, it is helpful to have every single translation.
+    var allTranslations = {"calendar":{"April":"Huhtikuu","August":"Elokuu","December":"Joulukuu","February":"Helmikuu","January":"Tammikuu","July":"Heinäkuu","June":"Kesäkuu","March":"Maaliskuu","May":"Toukokuu","November":"Marraskuu","October":"Lokakuu","September":"Syyskuu"},"cookies":{"acceptAll":"Hyväksy kaikki","acceptSelected":"Hyväksy valitut","all_required_notice":"Jotta tämä palvelu toimii, käytämme joitakin välttämättömiä evästeitä. Niiden on oltava aina päällä.","all_required_ok":"OK","close":"Sulje","consentModal_description":"Täällä voit valita, mitä evästeitä haluat meidän käyttävän.","consentModal_title":"Evästeasetukset","consentNotice_changeDescription":"Tällä sivustolla käytetyt evästeet ovat muuttuneet edellisen vierailusi jälkeen, uusi suostumuksesi.","consentNotice_description":"Käytämme joitakin välttämättömiä evästeitä, jotta tämä palvelu toimii. Haluaisimme myös käyttää {tarkoitukset}, jotta voimme ymmärtää, miten käytät palvelua ja tehdä parannuksia.","consentNotice_learnMore":"Näytä evästeet","consentNotice_testing":"Testaustila!","contextualConsent_acceptAlways":"Aina","contextualConsent_acceptOnce":"Kyllä","contextualConsent_description":"Haluatko ladata ulkoista sisältöä, jonka tarjoaa {nimi}?","contrast_description":"Esteettömyyspalvelujen aktiivinen tila säilyy.","contrast_title":"Esteettömyystila","cookie_settings":"Evästeasetukset","cookie_settings_description":"Tallentaa evästeiden suostumusasetuksesi","decline":"Hylkää lisäevästeet","google_analytics_description":"Kerää tietoja sivuvierailuista Google Analyticsin avulla","google_analytics_title":"Google Analytics","ok":"Hyväksy lisäevästeet","poweredBy":"Toteutettu Klaron kanssa!","privacyPolicy_name":"Tietosuojakäytäntö","privacyPolicy_text":"Saat lisätietoja lukemalla tietosuojakäytäntömme.","purposeItem_service":"palvelu","purposeItem_services":"palvelut","purposes_analytics_description":"Nämä palvelut keräävät tietoja siitä, miten käytät verkkosivustoa. Käytämme näitä tietoja tehdäksemme sivusta paremman.","purposes_analytics_title":"Analytiikkaevästeet","purposes_functional_description":"Välttämättömät evästeet pitävät tietosi turvassa ja muistavat esimerkiksi mieltymyksesi ja valinnat, jotka teet käyttäessäsi verkkosivustoa. Niiden on oltava aina päällä.","purposes_functional_title":"Välttämättömät evästeet","purposes_performance_description":"Nämä palvelut käsittelevät henkilötietoja tämän verkkosivuston tarjoaman palvelun optimoimiseksi.","purposes_performance_title":"Suorituskyvyn optimointi","save":"Tallenna","service_disableAll_description":"Tällä kytkimellä voit ottaa kaikki palvelut käyttöön tai poistaa ne käytöstä.","service_disableAll_title":"Ota kaikki palvelut käyttöön tai poista ne käytöstä","service_optOut_description":"Tämä palvelu ladataan oletuksena (mutta voit kieltäytyä)","service_optOut_title":"(kieltäydy)","service_purpose":"tarkoitus","service_purposes":"tarkoitukset","service_required_description":"Tämä palvelu vaaditaan aina.","service_required_title":"(aina vaadittu)"},"data":{"Member_Type":"Jäsentyyppi","Sex":"Sukupuoli","Study_level":"Koulutustaso","Year":"Vuosi","bachelor":"AMK","disaggregated":"Disaggregated","master":"YAMK","men":"Miehet","staff":"Henkilökunta","students":"Opiskelijat","women":"Naiset"},"frontpage":{"contact_title":"OTA YHTEYTTÄ","download_all":"Lataa kaikki tiedot(.zip)","file_size":"Koko","incollab_title":"YHTEISTYÖSSÄ","instructions_short":"Tervetuloa korkeakoulujen SDG-indikaattorikehykseen kestävän kehityksen tavoitteiden tietokeskukseen","instructions_shorter":"Valitse jokainen tavoite päästäksesi käsiksi tietoihin","intro_body":"Kestävän kehityksen tavoitteet (SDG) ovat yleinen kehotus toimia köyhyyden lopettamiseksi, planeetan suojelemiseksi ja elämien ja tulevaisuudennäkymien parantamiseksi kaikkialla. Korkeakoulu on tärkeä toimija sen saavuttamisessa, ei vain suhteessa SDG 4:ään, vaan myös sitoutuneena ja uusia sukupolvia kouluttavana instituutiona. Korkeakoulujen SDG-indikaattorikehykset kattavat kaikki 17 tavoitetta ja lisäävät päämääriä ja tavoitteita, jotka poikkitieteellinen tiimi on kehittänyt USD-projektissa.","intro_title":"17 tavoitetta muuttaa maailmaamme","project_title":"PROJEKTI","zip_file":"ZIP-tiedosto"},"general":{"back_to_top":"Takaisin ylös","built_using_open_sdg":"Rakennettu Open SDG:llä","facebook":"Facebook","goal":"Tavoite","goals":"Tavoitteet","hide":"piilota","home":"Koti","indicator":"Indikaattori","indicators":"Indikaattorit","label_warning":"Varoitus:","loading":"Ladataan hakutuloksia","opens_new_window":"avautuu uudesssa ikkunassa","page":"Sivu","pages":"Sivut","sdg":"Kestävän kehityksen tavoitteet","site_title":"Kestävän kehityksen tavoitteiden indikaattorit","target":"Alatavoite","targets":"Alatavoitteet","targets_and_indicators":"Alatavoitteet ja indikaattorit","twitter":"Twitter"},"global_goals":{"1-short":"Ei köyhyyttä","1-title":"Poistaa köyhyys sen kaikissa muodoissa kaikkialta","10-short":"Eriarvoisuuden vähentäminen","10-title":"Vähentää eriarvoisuutta maiden sisällä ja niiden välillä","11-short":"Kestävät kaupungit ja yhteisöt","11-title":"Taata turvalliset ja kestävät kaupungit sekä asuinyhdyskunnat","12-short":"Vastuullista kuluttamista","12-title":"Varmistaa kulutus- ja tuotantotapojen kestävyys","13-short":"Ilmastotekoja","13-title":"Toimia kiireellisesti ilmastonmuutosta ja sen vaikutuksia vastaan","14-short":"Vedenalainen elämä","14-title":"Säilyttää meret ja merten tarjoamat luonnonvarat sekä edistää niiden kestävää käyttöä","15-short":"Maanpäällinen elämä","15-title":"Suojella maaekosysteemejä, palauttaa niitä ennalleen ja edistää niiden kestävää käyttöä","16-short":"Rauha, oikeudenmukaisuus ja hyvä hallinto","16-title":"Edistää rauhanomaisia yhteiskuntia ja taata kaikille pääsy oikeuspalveluiden pariin; rakentaa tehokkaita, vastuullisia ja osallistavia instituutioita kaikilla tasoilla","17-short":"Yhteistyö ja kumppanuus","17-title":"Tukea vahvemmine kestävän kehityksen toimeenpanoa ja globaalia kumppanuutta","2-short":"Ei nälkää","2-title":"Poistaa nälkä, saavuttaa ruokaturva, parantaa ravitsemusta ja edistää kestävää maataloutta","3-short":"Terveyttä ja hyvinvointia","3-title":"Taata terveellinen elämä ja hyvinvointi kaiken ikäisille","4-short":"Hyvä koulutus","4-title":"Taata kaikille avoin, tasa-arvoinen ja laadukas koulutus sekä elinikäiset oppimismahdollisuudet","5-short":"Sukupuolten tasa-arvo","5-title":"Saavuttaa sukupuolten välinen tasa-arvo sekä vahvistaa naisten ja tyttöjen oikeuksia","6-short":"Puhdas vesi ja santaatio","6-title":"Varmistaa veden saanti ja kestävä käyttö sekä sanitaatio kaikille","7-short":"Edullista ja puhdasta energiaa","7-title":"Varmistaa edullinen, luotettava, kestävä ja uudenaikainen energia kaikille","8-short":"Ihmisarvoista työtä ja talouskasvua","8-title":"Edistää kaikkia koskevaa kestävää talouskasvua, täyttä ja tuottavaa työllisyyttä sekä säällisiä työpaikkoja","9-short":"Kestävää teollisuutta, innovaatioita ja infrastruktuureja","9-title":"Rakentaa kestävää infrakstruktuuria sekä edistää kestävää teollisuutta ja innovaatioita"},"global_indicators":{"2-4-1-title":"Maatalouden CO2-päästöt","2-4-2-title":"Ruokahävikki-indeksi","3-c-1-title":"Sykettä liikuntapalveluihin osallistuvat","3-c-2-title":"Great Place to Work trust index","4-3-1-title":"Ilmoittautuneiden opiskelijoiden kokonaismäärä","4-3-2-title":"Valmistuneiden opiskelijoiden kokonaismäärä","4-3-3-title":"Ajallaan valmistuvat opiskelijat prosentuaalisesti","4-3-4-title":"Monimuoto-opiskelijoiden määrä","4-4-1-title":"Yrittäjänä aloittavien tai jatkavien opiskelijoiden prosenttiosuus","4-4-2-title":"Valmistuneiden opiskelijoiden, jotka ovat työelämässä, prosenttiosuus","4-7-1-title":"Niiden koulutusalojen määrä, jotka ovat tehneet vastuullisuuslupauksen","9-1-1-title":"Kestävän kehityksen tavoitteisiin (SDG) liittyvien julkaisujen määrä","9-1-2-title":"Vastuullisuutta koskevien koulutusprojektien/-ohjelmien määrä","9-1-3-title":"Kestävän kehityksen hankkeisiin/ohjelmiin osallistuvien osallistujien määrä","9-1-4-title":"Kestävän kehityksen projekteihin/ohjelmiin osallistuvien osallistujien asiakastyytyv�isyys","9-2-1-title":"Kestävän kehityksen tavoitteisiin (SDG) liittyvien TKI-hankkeiden määrä"},"global_targets":{"1-1-title":"Poistaa vuoteen 2030 mennessä äärimmäinen köyhyys (nykymittarien mukaan ihmiset, jotka elävät alle 1,25 dollarilla päivässä)","1-2-title":"Vähentää vuoteen 2030 mennessä ainakin puolella niiden kaikenikäisten ihmisten määrää, jotka kansallisten määritelmien mukaan elävät köyhyydessä","1-3-title":"Toteuttaa kansallisesti asianmukaiset sosiaaliturvajärjestelmät ja -toimenpiteet, sosiaaliturvan vähimmäistasot mukaan lukien, sekä saavuttaa merkittävä vakuutussuoja köyhille ja huono-osaisille vuoteen 2030 mennessä","1-4-title":"Taata vuoteen 2030 mennessä, että kaikilla, erityisesti köyhillä ja huono-osaisilla, on yhtäläiset oikeudet taloudellisiin resursseihin sekä mahdollisuus peruspalveluihin, maan ja muunlaisen omaisuuden omistukseen sekä hallintaan, perintöön, luonnonvaroihin, uuteen teknologiaan ja rahoituspalveluihin, esimerkiksi mikrorahoitukseen","1-5-title":"Kehittää köyhien ja huono-osaisten sopeutumiskykyä vuoteen 2030 mennessä ja vähentää heidän alttiuttaan ja haavoittuvuuttaan ilmastoon liittyville ääri-ilmiöille ja muille taloudellisille, sosiaalisille ja ympäristöön liittyville tuhoille sekä katastrofeille","1-a-title":"Taata merkittävä resurssien mobilisointi eri lähteistä, esimerkiksi tehostetun kehitysyhteistyön kautta, jotta kehitysmaille, erityisesti vähiten kehittyneille maille, voidaan tarjota riittävät ja ennakoitavissa olevat keinot toimeenpanna ohjelmia ja politiikkoja, jotka tähtäävät köyhyyden poistamiseen kaikissa muodoissaan","1-b-title":"Luoda kansallisella, alueellisella ja kansainvälisellä tasolla järkevät, köyhien asemaa edistäviin ja sukupuolten tasa-arvon huomioiviin kehitysstrategioihin perustuvat toimintakehykset, jotka tukevat tehostettuja investointeja köyhyyden poistamiseen","10-1-title":"Nostaa vuoteen 2030 mennessä väestön köyhimmän 40 %:n tulojen kasvu asteittain korkeammalle tasolle kuin kansallinen keskiarvo ja pitää se siellä","10-2-title":"distää vuoteen 2030 mennessä kaikkien sosiaalista, taloudellista ja poliittista osallistumista ja kannustaa siihen iästä, sukupuolesta, vammaisuudesta, rodusta, etnisyydestä, alkuperästä, uskonnosta tai taloudellisesta tai muusta asemasta riippumatta","10-3-title":"Taata yhtäläiset mahdollisuudet ja vähentää eriarvoista kohtelua muun muassa poistamalla syrjinnän mahdollistavat lait, politiikat ja käytännöt sekä edistämällä asianmukaista lainsäädäntöä, politiikkoja ja toimenpiteitä","10-4-title":"Toteuttaa erityisesti finanssipoliittisia, palkkaan ja sosiaaliturvaan liittyviä käytäntöjä ja edistää tasa-arvoa asteittain","10-5-title":"Parantaa globaalien rahoitusmarkkinoiden ja -instituutioiden sääntelyä ja valvontaa sekä tukea tällaisen sääntelyn käyttöönottoa","10-6-title":"Turvata kehitysmaiden parempi edustus ja ääni kansainvälisten talous- ja rahoitusinstituutioiden päätöksenteossa entistä tehokkaampien, uskottavampien, vastuullisempien ja legitiimiempien instituutioiden kehittämiseksi","10-7-title":"Mahdollistaa ihmisten turvallinen, järjestelmällinen ja vastuullinen siirtolaisuus sekä liikkuvuus esimerkiksi suunnitelmallisten ja hyvin hallinnoitujen siirtolaispolitiikkojen avulla","10-a-title":"Ottaa kehitysmaita, erityisesti vähiten kehittyneitä maita, varten käyttöön erityisen ja eriytetyn kohtelun periaate Maailman kauppajärjestön sopimusten mukaisesti","10-b-title":"Kannustaa viralliseen kehitysapuun ja rahansiirtoihin, kuten ulkomaisiin suoriin sijoituksiin valtioille, joissa tarve on suurin, erityisesti vähiten kehittyneille maille, Afrikan maille, pieniin kehittyviin saarivaltioihin ja kehittyviin sisämaavaltioihin niiden kansallisten suunnitelmien ja ohjelmien mukaisesti","10-c-title":"Pienentää vuoteen 2030 mennessä maahanmuuttajien tekemien rahalähetysten käsittelykuluja alle 3 prosenttiin ja poistaa rahalähetyskanavat, joiden kulut ovat yli 5 prosenttia","11-1-title":"Taata vuoteen 2030 mennessä kaikille riittävä, turvallinen ja edullinen asunto ja peruspalvelut sekä parantaa slummialueita","11-2-title":"Taata vuoteen 2030 mennessä kaikille turvallinen, edullinen, luotettava ja kestävä liikennejärjestelmä, parantaa liikenneturvallisuutta erityisesti lisäämällä julkista liikennettä ja kiinnittämällä erityistä huomiota huono-osaisten, naisten, lasten, vammaisten ja ikääntyneiden tarpeisiin","11-3-title":"Lisätä vuoteen 2030 mennessä laajamittaista ja kestävää kaupungistumista ja mahdollisuuksia osallistavaan, integroituun ja kestävään asuinyhdyskuntien suunnitteluun sekä hallinnointiin kaikissa maissa","11-4-title":"Tehostaa hankkeita maailman kulttuuri- ja luontoperinnön suojelemiseksi","11-5-title":"Vähentää vuoteen 2030 mennessä merkittävästi katastrofien, kuten vesistöjen pilaantumisen, aiheuttamia kuolemantapauksia ja niille altistuvien ihmisten määrää sekä niihin liittyviä suoria taloudellisia tappioita suhteessa maailmanlaajuiseen bruttokansantuotteeseen panostaen erityisesti köyhien ja huono-osaisten suojelemiseen","11-6-title":"Vähentää vuoteen 2030 mennessä kaupunkien haitallisia ympäristövaikutuksia kiinnittämällä erityistä huomiota esimerkiksi ilmanlaatuun sekä yhdyskunta- ja muiden jätteiden käsittelyyn","11-7-title":"Taata vuoteen 2030 mennessä yhtäläinen pääsy turvallisiin, osallistaviin, vihreisiin ja julkisiin tiloihin erityisesti naisille ja lapsille, ikääntyneille sekä vammaisille","11-a-title":"Tukea kaupunkialueiden, niiden lähialueiden ja maaseudun välisiä positiivisia taloudellisia, sosiaalisia ja ympäristöön liittyviä yhteyksiä tukemalla kansallisia ja alueellisia kehityssuunnitelmia","11-b-title":"Lisätä vuoteen 2020 mennessä merkittävästi niiden kaupunkien ja asuinyhdyskuntien määrää, jotka laativat ja toteuttavat osallistamiseen, resurssitehokkuuteen, ilmastonmuutoksen vaikutusten lievittämiseen ja niihin sopeutumiseen sekä katastrofeista selviytymiseen tähtääviä yhtenäisiä politiikkoja ja suunnitelmia, sekä kehittää ja toteuttaa kokonaisvaltaisia katastrofiriskien hallintatoimia kaikilla tasoilla katastrofiriskien vähentämistä koskevan Sendain toimintakehyksen 2015-2030 puitteissa","11-c-title":"Tukea vähiten kehittyneitä maita kestävien ja joustavien, paikallisista materiaaleista tehtyjen rakennusten pystyttämisessä esimerkiksi rahoituksen ja teknisen avun keinoin","12-1-title":"Panna täytäntöön kestävää kulutusta ja tuotantoa koskeva kymmenvuotinen ohjelmakehys kaikissa maissa kehittyneiden maiden johdolla kehitysmaiden kehitystaso ja valmiudet huomioiden","12-2-title":"Saavuttaa vuoteen 2030 mennessä luonnonvarojen kestävä ja tehokas käyttö","12-3-title":"Puolittaa vuoteen 2030 mennessä maailmanlaajuinen ruokajätteen määrä jälleenmyyjä- ja kuluttajatasolla sekä vähentää ruokahävikkiä tuotanto- ja jakeluketjuissa sadonkorjuun jälkeinen hävikki mukaan lukien","12-4-title":"Varmistaa vuoteen 2020 mennessä ympäristön kannalta kestävä kemikaalien ja jätteiden käsittely niiden koko elinkaaren ajan sovittujen kansainvälisten toimintakehysten mukaisesti ja vähentää merkittävästi niiden vapautumista ilmaan, veteen tai maahan, jotta haitalliset vaikutukset terveyteen ja ympäristöön voidaan minimoida","12-5-title":"Vähentää vuoteen 2030 mennessä merkittävästi jätteiden syntymistä ennaltaehkäisyn, kierrätyksen ja uudelleenkäytön keinoin","12-6-title":"Kannustaa erityisesti suuria ja kansainvälisiä yhtiöitä ottamaan käyttöön kestävät käytännöt ja sisällyttämään kestävää kehitystä koskevat yritysvastuutiedot raportointiinsa","12-7-title":"Edistää kestäviä julkisia hankintakäytäntöjä kansallisten lakien ja prioriteettien mukaisesti","12-8-title":"Varmistaa vuoteen 2030 mennessä, että kestävästä kehityksestä ja luontoa suosivista elämäntavoista ollaan tietoisia kaikkialla","12-a-title":"Tukea kehitysmaita tieteellisten ja teknologisten valmiuksiensa vahvistamisessa, jotta ne voivat siirtyä kestävämpiin kulutus- ja tuotantotapoihin","12-b-title":"Kehittää ja ottaa käyttöön työkaluja, joilla voidaan valvoa kestävän kehityksen vaikutusta työpaikkoja luovan ja paikallista kulttuuria ja tuotteita edistävän kestävän matkailun kannalta","12-c-title":"Järkeistää tehottomia ja tuhlailevaan kulutukseen kannustavia fossiilisten polttoaineiden tukia poistamalla markkinoiden vääristymiä paikallisten olosuhteiden mukaisesti, esimerkiksi uudistamalla verotusta ja karsimalla haitallisia tukia niiden ympäristövaikutusten perusteella ottaen kuitenkin huomioon kehitysmaiden erityistarpeet ja tilanne sekä minimoiden niiden kehitykselle mahdollisesti aiheutuvat haitat siten, että köyhien ja toimenpiteille altistuvien yhteisöjen asema voidaan turvata","13-1-title":"Parantaa kaikkien maiden kykyä sopeutua ilmastoon liittyviin riskitekijöihin ja luonnonkatastrofeihin","13-2-title":"Integroida ilmastonmuutosta koskevat toimenpiteet kansalliseen politiikkaan, strategioihin ja suunnitteluun","13-3-title":"Parantaa ilmastonmuutoksen hidastamiseen, sopeutumiseen, vaikutusten lievittämiseen ja ennakkovaroituksiin liittyvää koulutusta, tietämyksen lisäämistä sekä kansalaisten ja instituutioiden valmiuksia","13-a-title":"Panna täytäntöön YK:n ilmastonmuutosta koskevaan puitesopimukseen osallistuvien kehittyneiden maiden lupaus mobilisoida vuoteen 2020 mennessä vuosittain 100 miljardia dollaria kehitysmaiden ilmastotoimiin ja varmistaa vihreän ilmastorahaston läpinäkyvä täytäntöönpano ja toiminnan aloittaminen pääomittamisen kautta mahdollisimman pian","13-b-title":"Edistää mekanismeja, joilla lisätään tietoisuutta tehokkaasta ilmastonmuutokseen liittyvästä suunnittelusta ja hallinnasta vähiten kehittyneissä maissa ja pienissä kehittyvissä saarivaltiossa, painopisteinä erityisesti naiset, nuoret ja paikalliset sekä marginalisoituneet yhteisöt","14-1-title":"Ehkäistä ja vähentää vuoteen 2025 mennessä merkittävästi merten saastumista erityisesti maalla tapahtuvien toimintojen vaikutuksesta, kuten meriin päätyvien jätteiden ja ravinnekuormituksen kautta","14-2-title":"Suojella ja hallita vuoteen 2020 mennessä kestävästi merten ja rannikkoalueiden ekosysteemejä merkittävien haittavaikutusten ehkäisemiseksi esimerkiksi vahvistamalla niiden kestokykyä sekä ryhtyä ennallistamistoimiin terveiden ja tuottavien merialueiden turvaamiseksi","14-3-title":"Minimoida ja torjua merten happamoitumisen vaikutuksia esimerkiksi tehostamalla tieteellistä yhteistyötä kaikilla tasoilla","14-4-title":"Säännellä kalastusta tehokkaasti vuoteen 2020 mennessä ja lopettaa liikakalastus, laiton, raportoimaton ja sääntelemätön kalastus sekä tuhoisat kalastuskäytänteet ja toteuttaa tiedepohjaisia hallintasuunnitelmia, jotta kalakannat voidaan palauttaa mahdollisimman lyhyessä ajassa vähintään tasoille, joilla voidaan taata suurin mahdollinen kestävä tuotto kalakantojen biologisten ominaisuuksien mukaisesti","14-5-title":"Suojella vuoteen 2020 mennessä vähintään 10 % rannikko- ja merialueista kansallisten ja kansainvälisten lakien sekä parhaan käytettävissä olevan tutkimustiedon mukaisesti","14-6-title":"Kieltää vuoteen 2020 mennessä tietyt kalastustukien muodot, jotka edistävät liikakapasiteettia ja -kalastusta, poistaa tuet, jotka edistävät laitonta, raportoimatonta ja sääntelemätöntä kalastusta ja pidättyä uusista vastaavanlaisista tuista ottaen huomioon, että kehitysmaita ja vähiten kehittyneitä maita koskevan asianmukaisen ja tehokkaan erityisen ja eriytetyn kohtelun tulisi olla kiinteä osa Maailman kauppajärjestön kalastusalan tukia koskevia neuvotteluja","14-7-title":"Kasvattaa vuoteen 2030 mennessä pienille kehittyville saarivaltioille ja vähiten kehittyneille maille kertyviä taloudellisia hyötyjä kestävästä meriresurssien käytöstä esimerkiksi kalastuksen, vesiviljelyn ja matkailun kestävän hallinnoinnin keinoin","14-a-title":"Lisätä tutkimustietoa, kehittää tutkimuskapasiteettia ja siirtää meriteknologiaa ottaen huomioon Hallitustenvälisen meritieteellisen komission meriteknologian siirtämistä koskevat ehdot ja ohjeet, jotta merten tilaa voidaan parantaa ja merten biologisen monimuotoisuuden positiivista vaikutusta kehitysmaiden, erityisesti pienten kehittyvien saarivaltioiden ja vähiten kehittyneiden maiden, kehitykseen voidaan lisätä","14-b-title":"Tarjota pienimuotoisen kalastuksen harjoittajille mahdollisuus käyttää merten tarjoamia luonnonvaroja ja pääsy merimarkkinoille","14-c-title":"Tehostaa merten ja niiden tarjoamien luonnonvarojen suojelua ja kestävää käyttöä panemalla täytäntöön YK:n merioikeusyleissopimuksessa kuvattu kansainvälinen lainsäädäntö, joka tarjoaa oikeudellisen kehyksen merten ja niiden tarjoamien luonnonvarojen suojelulle ja kestävälle käytölle, kuten \"The future we want\" -loppuasiakirjan 158 kappaleessa palautetaan mieliin'","15-1-title":"Suojella ja palauttaa vuoteen 2020 mennessä ennalleen maanpäällisiä ja sisämaassa sijaitsevia makean veden ekosysteemejä ja niiden tarjoamia palveluja, erityisesti metsiä, kosteikkoja, vuoria ja kuivan maan alueita, sekä turvata niiden kestävä käyttö kansainvälisiin sopimuksiin sisältyvien velvoitteiden mukaisesti","15-2-title":"Edistää vuoteen 2020 mennessä kaiken tyyppisten metsien kestävien hoitomenetelmien käyttöönottoa, pysäyttää metsäkato, ennallistaa turmeltuneita metsäalueita ja lisätä maailmanlaajuista metsitystä merkittävästi","15-3-title":"Taistella vuoteen 2030 mennessä aavikoitumista vastaan, ennallistaa pilaantunut maaperä esimerkiksi aavikoitumiselle, kuivuudelle ja tulville altistuneilla alueilla ja pyrkiä saavuttamaan nollataso maaperän pilaantumisessa","15-4-title":"Varmistaa vuoteen 2030 mennessä vuoriekosysteemien ja niiden biologisen monimuotoisuuden suojelu, jotta voidaan tukea niiden kykyä tarjota kestävän kehityksen kannalta olennaisia hyötyjä","15-5-title":"Ryhtyä kiireellisiin ja merkittäviin toimenpiteisiin luontaisten elinympäristöjen turmeltumisen vähentämiseksi, luonnon monimuotoisuuden katoamisen pysäyttämiseksi ja uhanalaisten lajien suojelemiseksi sekä niiden sukupuuttoon kuolemisen estämiseksi vuoteen 2020 mennessä","15-6-title":"Edistää geeniresurssien hyödyntämisestä saatavien hyötyjen oikeudenmukaista ja tasavertaista jakautumista sekä edistää tällaisten resurssien asianmukaisia käyttömahdollisuuksia kansainvälisesti sovituilla tavoilla","15-7-title":"Ryhtyä kiireellisiin toimenpiteisiin suojeltujen kasvien ja eläinten salametsästyksen ja -kaupan pysäyttämiseksi sekä puuttua laittomien villieläinperäisten tuotteiden kysyntään ja tarjontaan","15-8-title":"Ottaa vuoteen 2020 mennessä käyttöön menetelmiä, joilla voidaan estää ja merkittävästi vähentää haitallisten vierasperäisten lajien vaikutuksia maa- ja vesiekosysteemeihin sekä pitää ensisijaisten lajien määrä kurissa tai karsia niitä","15-9-title":"Integroida vuoteen 2020 mennessä ekosysteemiin ja luonnon monimuotoisuuden liittyvät arvot kansalliseen ja paikalliseen suunnitteluun, kehitysprosesseihin ja köyhyyden vähentämisstrategioihin sekä -toimenpiteisiin","15-a-title":"Mobilisoida ja merkittävästi lisätä rahoitusta kaikista lähteistä luonnon monimuotoisuuden ja ekosysteemien suojeluun sekä kestävään käyttöön","15-b-title":"Mobilisoida merkittävästi resursseja kaikista lähteistä ja kaikilla tasoilla kestävän metsänhoidon rahoittamiseen sekä tarjota riittäviä kannustimia kehitysmaille tällaisen metsänhoidon sekä suojelu- ja metsitystoimien edistämiseksi","15-c-title":"Lisätä maailmanlaajuista tukea suojeltujen lajien salametsästyksen ja -kaupan vastaiseen taisteluun esimerkiksi parantamalla paikallisten yhteisöjen valmiuksia hankkia elantonsa kestävillä tavoilla","16-1-title":"Vähentää merkittävästi kaikkia väkivallan muotoja ja niihin liittyviä kuolemantapauksia kaikkialla","16-2-title":"Lopettaa kaikki lapsiin kohdistuva pahoinpitely, hyväksikäyttö, ihmiskauppa ja kaikki väkivallan muodot sekä lasten kiduttaminen","16-3-title":"Edistää oikeusturvaa kansallisilla ja kansainvälisillä tasoilla sekä varmistaa kaikille yhtäläinen pääsy oikeuspalveluiden piiriin","16-4-title":"Vähentää vuoteen 2030 mennessä merkittävästi rahan sekä aseiden laittomia siirtoja, tehostaa varastetun omaisuuden palauttamista ja taistella kaikkea järjestäytyneen rikollisuuden muotoja vastaan","16-5-title":"Vähentää merkittävästi korruptiota ja lahjontaa kaikissa muodoissaan","16-6-title":"Kehittää tehokkaita, vastuullisia ja läpinäkyviä instituutioita kaikilla tasoilla","16-7-title":"Kehittää tehokkaita, vastuullisia ja läpinäkyviä instituutioita kaikilla tasoilla","16-8-title":"Laajentaa ja vahvistaa kehitysmaiden osallistumista maailmanlaajuisiin hallinnointijärjestelmiin","16-9-title":"Taata vuoteen 2030 mennessä kaikille laillinen henkilöllisyys, kuten rekisteröinti syntyessä","16-a-title":"Vahvistaa tärkeimpiä kansallisia instituutioita esimerkiksi kansainvälisen yhteistyön avulla, jotta väkivallan ehkäisemiseen ja terrorismin sekä rikollisuuden torjumiseen tarvittavia valmiuksia voidaan kehittää kaikilla tasoilla, erityisesti kehitysmaissa","16-b-title":"Edistää ja panna täytäntöön syrjinnän vastaisia lakeja ja kestävän kehityksen käytäntöjä","17-1-title":"Vahvistaa kotimaisten resurssien mobilisointia esimerkiksi kehitysmaille kohdistettavan kansainvälisen tuen kautta, jotta ne voivat kehittää valmiuksiaan verojen ja muiden tuottojen keräämiseen","17-10-title":"Edistää yleismaailmallista, sääntöihin perustuvaa, avointa, syrjimätöntä ja yhdenvertaista monenvälistä Maailman kauppajärjestön alaisuudessa toimivaa kauppaa muun muassa viemällä päätökseen Dohan kehitysohjelman alaiset neuvottelut","17-11-title":"Lisätä merkittävästi kehitysmaiden vientiä siten, että erityisesti vähiten kehittyneiden maiden osuus maailmanlaajuisesta viennistä voidaan kaksinkertaistaa vuoteen 2020 mennessä","17-12-title":"Taata vähiten kehittyneille maille viipymättä tulliton ja kiintiötön, pysyvä pääsy markkinoille Maailman kauppajärjestön päätösten mukaisesti esimerkiksi varmistamalla, että vähiten kehittyneistä maista tapahtuvaa tuontia koskevat etuuskohteluun oikeuttavat alkuperäsäännöt ovat läpinäkyviä ja yksinkertaisia sekä markkinoille pääsyä edistäviä","17-13-title":"Parantaa maailmanlaajuista makrotalouden vakautta muun muassa poliittisen koordinoinnin ja johdonmukaisuuden avulla","17-14-title":"Parantaa kestävää kehitystä koskevan politiikan johdonmukaisuutta","17-15-title":"Kunnioittaa kunkin maan poliittista liikkumisvaraa ja johtoa köyhyyden poistamiseen ja kestävään kehitykseen tähtäävän politiikan laatimisessa ja toteuttamisessa","17-16-title":"Tehostaa kestävän kehityksen globaalia kumppanuutta ja täydentää sitä useiden sidosryhmien kumppanuuksilla, jotka jalkauttavat ja jakavat tietoja, asiantuntemusta, teknologiaa ja rahoitusresursseja kestävän kehityksen tavoitteiden tueksi kaikissa maissa, erityisesti kehitysmaissa","17-17-title":"Kannustaa ja edistää tehokkaita julkisia, julkisen ja yksityisen sektorin sekä kansalaisyhteiskunnan välisiä kumppanuuksia niiden oman asiantuntemuksen ja resursointistrategioiden pohjalta","17-18-title":"Tehostaa vuoteen 2020 mennessä tukea kehitysmaiden, mukaan lukien vähiten kehittyneiden maiden ja pienten kehittyvien saarivaltioiden, valmiuksien kehittämiselle siten, että laadukkaiden, ajantasaisten ja luotettavien, tulotason, sukupuolen, iän, rodun, etnisyyden, maahanmuuttaja-aseman, vammaisuuden, maantieteellisen sijainnin ja muiden kansallisissa konteksteissa merkittävien ominaisuuksien perusteella eriytettyjen tietojen saatavuutta voidaan merkittävästi parantaa","17-19-title":"Kehittää vuoteen 2030 mennessä kestävän kehityksen etenemistä koskevia mittareita bruttokansantuotteen täydennykseksi nykyisten hankkeiden pohjalta sekä tukea tilastointivalmiuksien kehittämistä kehitysmaissa","17-2-title":"Kannustaa kehittyneitä maita toteuttamaan täysimääräisesti sitoutumisensa viralliseen kehitysapuun, esimerkiksi monien kehittyneiden maiden sitoutuminen tavoitteeseen siitä, että 0,7 prosentin osuus BKT:stä käytetään viralliseen kehitysapuun (ODA/GNI) kehitysmaille ja 0,15-0,2 prosenttia viralliseen kehitysapuun (ODA/GNI) vähiten kehittyneille maille","17-3-title":"Mobilisoida lisää rahoitusresursseja kehitysmaihin useista lähteistä","17-4-title":"Auttaa kehitysmaita saavuttamaan pitkän aikavälin velanhoitokyky koordinoiduilla käytännöillä, joiden tavoitteena on edistää velkarahoitusta, velkahelpotuksia ja velkojen uudelleenjärjestelyä tarpeen mukaan sekä puuttua erittäin velkaantuneiden köyhien maiden ulkoiseen velkaan velkakierreriskin pienentämiseksi","17-5-title":"Ottaa vähiten kehittyneitä maita varten käyttöön investointien edistämiseen tähtääviä ohjelmia","17-6-title":"Tehostaa pohjois-etelä- ja etelä-etelä-akselilla tapahtuvaa sekä kolmenvälistä alueellista ja kansainvälistä tieteeseen, teknologiaan ja innovaatioihin liittyvää yhteistyötä ja valmiuksia sekä kehittää tietojen jakamista keskinäisesti sovituin ehdoin, esimerkiksi parantamalla nykyisten mekanismien keskinäistä koordinointia erityisesti YK:n tasolla sekä maailmanlaajuisen teknologiansiirtoa helpottavan mekanismin avulla","17-7-title":"Edistää ympäristöystävällisten teknologioiden kehittämistä, siirtoa ja levittämistä kehitysmaihin suotuisin ehdoin, myös ilman täyttä vastiketta ja etuoikeutetusti, jos näin keskinäisesti sovitaan","17-8-title":"Ottaa täysimääräisesti käyttöön teknologiapankki sekä tutkimus-, teknologia- ja innovaatiovalmiuksia kehittävä mekanismi vähiten kehittyneille maille vuoteen 2017 mennessä ja lisätä mahdollistavan teknologian, erityisesti tieto- ja viestintäteknologian, käyttöä","17-9-title":"Tarjota kehitysmaille vahvistettua kansainvälistä apua tehokkaaseen ja kohdistettuun valmiuksien kehittämiseen, jotta kansallisia suunnitelmia kestävän kehityksen tavoitteiden toimeenpanemiseksi voidaan tukea esimerkiksi pohjois-etelä- ja etelä-etelä-akselilla tapahtuvan sekä kolmenvälisen yhteistyön kautta","2-1-title":"Poistaa vuoteen 2030 mennessä nälkä ja varmistaa, että kaikki, erityisesti köyhät ja huono-osaiset, mukaan lukien pikkulapset, saavat riittävästi turvallista ja ravinteikasta ruokaa ympäri vuoden","2-2-title":"Poistaa vuoteen 2030 mennessä kaikki aliravitsemuksen muodot esimerkiksi saavuttamalla vuoteen 2025 mennessä alle 5-vuotiaiden lasten kasvun hidastumista ja kuihtumista koskevat kansainvälisesti sovitut tavoitteet, sekä vastata murrosikäisten tyttöjen, raskaana olevien?ja imettävien naisten sekä ikääntyneiden ihmisten ravitsemuksellisiin tarpeisiin","2-3-title":"Tuplata vuoteen 2030 mennessä maatalouden tuottavuus ja pienruoantuottajien, erityisesti naisten, alkuperäiskansojen, perheviljelijöiden, paimentolaisten ja kalastajien, tulot esimerkiksi takaamalla yhtäläinen oikeus maahan, muihin tuotantoresursseihin ja -panoksiin, tietoon, rahoituspalveluihin, markkinoihin ja arvonluontimahdollisuuksiin sekä työllistymiseen maatalouden ulkopuolella","2-4-title":"Taata vuoteen 2030 mennessä kestävät ruoantuotantojärjestelmät ja toteuttaa sopeutuvia maanviljelykäytäntöjä, jotka lisäävät tuottavuutta ja tuotantoa, auttavat ekosysteemien suojelussa, vahvistavat kykyä sopeutua ilmastonmuutokseen, äärimmäisiin sääoloihin, kuivuuteen, tulviin ja muihin tuhoihin ja parantavat asteittain maaperän laatua","2-5-title":"Säilyttää vuoteen 2020 mennessä siementen, viljelykasvien ja tuotantoeläinten sekä niiden sukuisten villien lajien geneettinen monimuotoisuus esimerkiksi järkevästi hallinnoitujen ja hajautettujen kansallisen, alueellisen ja kansainvälisen tason siemen- ja kasvipankkien avulla sekä edistää geeniresurssien ja niihin liittyvien perinnetietojen saantia ja niiden käytöstä aiheutuvien hyötyjen oikeudenmukaista sekä yhtäläistä jakamista kansainvälisesti sovitulla tavalla","2-a-title":"Lisätä muun muassa tehostetun kansainvälisen yhteistyön avulla panostuksia maaseudun infrastruktuuriin, maatalouden tutkimus- ja laajennuspalveluihin, teknologian kehitykseen ja kasvien sekä tuotantoeläinten geenipankkeihin, jotta kehitysmaiden, erityisesti vähiten kehittyneiden maiden, maatalouden tuotantokapasiteettia voidaan kasvattaa","2-b-title":"Oikaista ja estää kaupan rajoituksia ja vääristymiä maailman maatalousmarkkinoilla esimerkiksi poistamalla samanaikaisesti kaikki maatalouden vientitukien muodot ja vaikutukseltaan vastaavanlaiset vientitoimet Dohan kehityskierroksen mandaatin mukaisesti","2-c-title":"Ottaa käyttöön menetelmiä, joilla voidaan taata elintarvikkeiden raaka-ainemarkkinoiden ja niiden johdannaisten toimivuus ja mahdollistaa ajantasaisten markkinatietojen saanti muun muassa elintarvikevarastoista, jotta elintarvikehintojen voimakasta heilahtelua voitaisiin rajoittaa","3-1-title":"Vähentää vuoteen 2030 mennessä maailmanlaajuista äitiyskuolleisuutta niin, että alle 70 äitiä kuolee 100 000 elävänä syntynyttä lasta kohden","3-2-title":"Lopettaa vuoteen 2030 mennessä vastasyntyneiden ja alle 5vuotiaiden lasten ehkäistävissä olevat kuolemat; tavoitteena on, että jokaisessa maassa tuhannesta elävänä syntyneestä lapsesta enintään 12 kuolee vastasyntyneinä ja enintään 25 kuolee ennen 5 vuoden ikää","3-3-title":"Lopettaa vuoteen 2030 mennessä AIDS-, tuberkuloosi- ja malariaepidemiat sekä hoitamattomien trooppisten tautien epidemiat ja estää hepatiitin, veden välityksellä tarttuvien tautien ja muiden tarttuvien tautien leviäminen","3-4-title":"Vähentää vuoteen 2030 mennessä kolmanneksella tarttumattomien tautien aiheuttamia ennenaikaisia kuolemia ennaltaehkäisyn ja hoidon avulla sekä edistää henkistä terveyttä ja hyvinvointia","3-5-title":"Tehostaa päihteiden, mukaan lukien huumeiden ja alkoholin, väärinkäytön ehkäisemistä ja hoitoa","3-6-title":"Puolittaa vuoteen 2020 mennessä maailmanlaajuisten liikenneonnettomuuksista johtuvien kuolemien ja vammojen määrä","3-7-title":"Taata vuoteen 2030 mennessä kaikille pääsy seksuaali- ja lisääntymisterveyden hoitopalvelujen, kuten perhesuunnittelun, tiedottamisen ja koulutuksen, piiriin sekä varmistaa lisääntymisterveyden ottaminen mukaan kansallisiin strategioihin ja ohjelmiin","3-8-title":"Saavuttaa yleiskattava terveydenhuolto, mukaan lukien turva taloudellisilta riskeiltä, pääsy laadukkaiden ja olennaisten terveydenhoitopalvelujen piiriin sekä turvalliset, tehokkaat, laadukkaat ja edulliset välttämättömät lääkkeet ja rokotukset kaikille","3-9-title":"Vähentää vuoteen 2030 mennessä merkittävästi vaarallisista kemikaaleista ja ilman, veden ja maaperän saastumisesta sekä pilaantumisesta johtuvia kuolemia ja sairauksia","3-a-title":"Tukea tupakoinnin torjuntaa koskevan Maailman terveysjärjestön (WHO) puitesopimuksen täytäntöönpanoa kaikissa maissa tarpeen mukaan","3-b-title":"Tukea pääasiassa kehitysmaihin vaikuttaviin tarttuviin ja tarttumattomiin tauteihin tarkoitettujen rokotteiden sekä lääkkeiden tutkimusta ja kehitystä, taata edullisten ja välttämättömien lääkkeiden ja rokotteiden saanti TRIPS-sopimusta ja kansanterveyttä koskevan Dohan julistuksen mukaisesti, joka vahvistaa kehitysmaiden oikeuden hyödyntää täysimääräisesti teollis- ja tekijänoikeuksien kauppaan liittyvistä näkökohdista tehtyyn sopimukseen sisältyviä määräyksiä, jotka koskevat kansanterveyden turvaamiseen liittyviä joustoja, ja erityisesti varmistaa lääkkeiden saanti kaikille","3-c-title":"Lisätä merkittävästi terveyteen kohdennettavaa rahoitusta ja terveydenhuollon työvoiman rekrytointia, kehittämistä, kouluttamista ja säilyttämistä kehitysmaissa, erityisesti vähiten kehittyneissä maissa ja pienissä kehittyvissä saarivaltioissa","3-d-title":"Vahvistaa kaikkien maiden, erityisesti kehitysmaiden, valmiuksia kansallisten ja maailmanlaajuisten terveysriskien ennakkovaroituksiin, minimointiin ja hallintaan","4-1-title":"Varmistaa vuoteen 2030 mennessä, että kaikki saavat päätökseen ilmaisen, tasa-arvoisen ja laadukkaan perus- ja keskiasteen koulutuksen, joka johtaa olennaisiin ja tehokkaisiin oppimistuloksiin","4-2-title":"Varmistaa vuoteen 2030 mennessä kaikille mahdollisuus laadukkaaseen varhaislapsuuden kehitykseen ja hoitoon sekä perusasteen koulutukseen valmistavaan esiopetukseen","4-3-title":"Varmistaa vuoteen 2030 mennessä kaikille mahdollisuus edulliseen ja laadukkaaseen tekniseen, ammatilliseen ja kolmannen asteen koulutukseen korkea-asteen koulutus mukaan lukien","4-4-title":"Lisätä vuoteen 2030 mennessä merkittävästi niiden nuorten ja aikuisten määrää, joilla on työllistymiseen, säällisiin työpaikkoihin ja yrittäjyyteen tarvittavat taidot, kuten tekninen ja ammatillinen osaaminen","4-5-title":"Poistaa vuoteen 2030 mennessä sukupuolten eriarvoisuus koulutuksessa ja varmistaa heikossa asemassa oleville, kuten vammaisille, alkuperäiskansoille ja huono-osaisille lapsille, yhtäläinen mahdollisuus kaiken tasoiseen koulutukseen ja ammatilliseen valmennukseen","4-6-title":"Varmistaa vuoteen 2030 mennessä, että kaikki nuoret ja merkittävä osa aikuisista ovat luku- ja laskutaitoisia","4-7-title":"Varmistaa vuoteen 2030 mennessä, että kaikki oppijat saavat kestävän kehityksen edistämiseen tarvittavat tiedot ja taidot esimerkiksi kestävää kehitystä ja kestäviä elämäntapoja, ihmisoikeuksia, sukupuolten tasa-arvoa, rauhan ja väkivallattomuuden kulttuurin edistämistä, maailmankansalaisuutta, kulttuurien monimuotoisuuden sekä kulttuurin osuutta kestävässä kehityksessä arvostavan koulutuksen kautta","4-a-title":"Rakentaa ja uudistaa lapset, vammaisuuden ja sukupuolten tasa-arvon huomioon ottavia koululaitoksia sekä tarjota turvallisia, väkivallattomia, osallistavia ja tehokkaita oppimisympäristöjä kaikille","4-b-title":"Lisätä vuoteen 2020 mennessä merkittävästi kehitysmaiden, erityisesti vähiten kehittyneiden maiden, pienten kehittyvien saarivaltioiden ja Afrikan maiden saatavilla olevia stipendejä, joiden turvin voidaan hakeutua korkeamman asteen koulutukseen, esimerkiksi ammatilliseen koulutukseen sekä tieto- ja viestintäteknologian, tekniikan, konerakennuksen ja tieteen koulutusohjelmiin kehittyneissä maissa ja muissa kehittyvissä maissa","4-c-title":"Lisätä vuoteen 2030 mennessä merkittävästi pätevien opettajien tarjontaa kehitysmaissa, erityisesti vähiten kehittyneissä maissa ja pienissä kehittyvissä saarivaltioissa, esimerkiksi kansainvälisen opettajankoulutusta koskevan yhteistyön avulla","5-1-title":"Lopettaa kaikenlainen naisiin ja tyttöihin kohdistuva syrjintä kaikkialla","5-2-title":"Lopettaa kaikenlainen naisiin ja tyttöihin kohdistuva väkivalta julkisissa ja yksityisissä yhteyksissä, kuten ihmiskauppa ja seksuaalinen tai muu hyväksikäyttö","5-3-title":"Lopettaa kaikki haitalliset käytännöt, kuten lapsi- ja pakkoavioliitot sekä naisten sukupuolielinten silpominen","5-4-title":"Tunnustaa palkaton hoito- ja kotityö sekä antaa sille arvo tarjoamalla julkisia palveluja, infrastruktuuri ja sosiaaliturvaan liittyviä käytäntöjä sekä edistämällä jaettua vastuuta kodista ja perheestä kansallisten erityispiirteiden mukaisesti","5-5-title":"Taata naisille täysivaltainen ja tehokas osallistuminen sekä yhtäläiset johtamismahdollisuudet kaikilla päätöksenteon tasoilla politiikassa, taloudessa ja julkisessa elämässä","5-6-title":"Taata yhtäläiset mahdollisuudet seksuaali- ja lisääntymisterveyteen sekä lisääntymisoikeudet kansainvälisen väestö- ja kehityskonferenssin toimintaohjelman ja Pekingin toimintaohjelman sekä niiden arviointikonferenssien päätösasiakirjojen mukaisesti sovitulla tavalla","5-a-title":"Toteuttaa uudistuksia, joilla naiset saavat yhtäläiset oikeudet taloudellisiin resursseihin, maan ja muunlaisen omaisuuden omistajuuteen sekä hallintaan, rahoituspalveluihin, perintöön ja luonnonvaroihin kansallisten lakien mukaisesti","5-b-title":"Tehostaa mahdollistavan teknologian, erityisesti tieto- ja viestintäteknologian, käyttöä naisten oikeuksien ja mahdollisuuksien vahvistamiseksi","5-c-title":"Kehittää ja vahvistaa järkeviä käytäntöjä ja täytäntöönpanokelpoista lainsäädäntöä, joilla edistetään sukupuolten tasa-arvoa ja naisen sekä tyttöjen oikeuksia ja mahdollisuuksia kaikilla tasoilla","6-1-title":"Varmistaa vuoteen 2030 mennessä turvallisen ja edullisen juomaveden saatavuus kaikille","6-2-title":"Taata vuoteen 2030 mennessä riittävä ja yhtäläinen sanitaatio ja hygienia kaikille ja lopettaa avokäymälät kiinnittäen erityistä huomiota naisten ja tyttöjen sekä huono-osaisten tarpeisiin","6-3-title":"Parantaa vuoteen 2030 mennessä veden laatua vähentämällä saastumista, lopettamalla kaatopaikat ja minimoimalla vaarallisten kemikaalien ja materiaalien päästöt, puolittamalla käsittelemättömän jäteveden määrä ja lisäämällä merkittävästi maailmanlaajuista kierrätystä ja turvallista uudelleenkäyttöä","6-4-title":"Lisätä vuoteen 2030 mennessä merkittävästi vedenkäytön tehokkuutta kaikilla sektoreilla, varmistaa kestävä vedenotto ja makean veden riittävyys vesipulan ehkäisemiseksi sekä vähentää merkittävästi vesipulasta kärsivien määrää","6-5-title":"Toteuttaa vuoteen 2030 mennessä integroitu vesivarojen hallinta kaikilla tasoilla esimerkiksi valtioiden välisellä yhteistyöllä tarpeen mukaan","6-6-title":"Suojella ja ennallistaa vuoteen 2020 mennessä vesistöihin liittyviä ekosysteemejä, kuten vuoria, metsiä, kosteikkoja, jokia, pohjavesiä ja järviä","6-a-title":"Laajentaa vuoteen 2030 mennessä kansainvälistä yhteistyötä ja valmiuksien kehittämiseen liittyvää tukea kehitysmaille veteen ja sanitaatioon liittyvissä toimenpiteissä ja ohjelmissa, jotka koskevat esimerkiksi veden talteenottoa, suolanpoistoa, vedenkulutuksen tehostamista, jätevesien käsittelyä sekä kierrätys- ja uudelleenkäyttöteknologioita","6-b-title":"Tukea ja vahvistaa paikallisyhteisöjen osallistumista vesistöjen ja sanitaation hallinnan kehittämiseen","7-1-title":"Varmistaa vuoteen 2030 mennessä edulliset, luotettavat ja uudenaikaiset energiapalvelut kaikille","7-2-title":"Lisätä vuoteen 2030 mennessä uusiutuvan energian osuutta merkittävästi maailmanlaajuisessa energialähteiden yhdistelmässä","7-3-title":"Tuplata vuoteen 2030 mennessä energiatehokkuuden maailmanlaajuinen parantumisvauhti","7-a-title":"Tehostaa vuoteen 2030 mennessä kansainvälistä yhteistyötä, joka tarjoaa mahdollisuuksia puhtaan energian tutkimukseen ja teknologiaan, uusiutuvan energian käyttö, energiatehokkuus ja edistynyt sekä entistä puhtaampi fossiilisten polttoaineiden käyttöteknologia mukaan lukien, sekä edistää investointeja energiainfrastruktuuriin ja puhtaan energian teknologiaan","7-b-title":"Laajentaa vuoteen 2030 mennessä infrastruktuuria ja uudistaa teknologioita uudenaikaisten ja kestävien energiapalvelujen tarjoamiseksi kaikille kehitysmaissa, erityisesti vähiten kehittyneissä maissa, pienissä kehittyvissä saarivaltioissa ja kehittyvissä sisämaavaltioissa niiden omien tukiohjelmien mukaisesti","8-1-title":"Ylläpitää kaikkia koskevaa talouskasvua kansallisten olosuhteiden mukaisesti ja erityisesti vähintään 7 % BKT:n vuosittaista kasvua vähiten kehittyneissä maissa","8-10-title":"Tukea kotimaisten rahoituslaitosten kykyä tarjota pankki-, vakuutus- ja rahoituspalveluja kaikille","8-2-title":"Saavuttaa korkeampi taloudellisen tuottavuuden taso monipuolistamisen, teknologian uudistamisen ja innovaatioiden avulla, esimerkiksi panostamalla lisäarvoa luoviin ja työvoimavaltaisiin aloihin","8-3-title":"Edistää kehityslähtöisiä käytäntöjä, jotka tukevat tuottavaa toimintaa, säällisten työpaikkojen luontia, yrittäjyyttä, luovuutta ja innovointia sekä kannustavat mikro- ja pienyritysten sekä keskisuurten yritysten perustamiseen ja kasvattamiseen, esimerkiksi takaamalla rahoituspalvelujen saanti","8-4-title":"Parantaa vuoteen 2030 saakka asteittain maailmanlaajuista resurssitehokkuutta kulutuksessa ja tuotannossa ja pyrkiä erottamaan talouskasvu ja ympäristön pilaantuminen toisistaan kestävää kulutusta ja tuotantoa koskevan kymmenvuotisen ohjelmakehyksen mukaisesti, kehittyneet valtiot eturintamassa","8-5-title":"Saavuttaa vuoteen 2030 mennessä täysi ja tuottava työllisyys ja säällinen työ kaikille, mukaan lukien nuorille ja vammaisille, sekä sama palkka samanarvoisesta työstä","8-6-title":"Vähentää vuoteen 2020 mennessä merkittävästi niiden nuorten määrää, jotka eivät käy työssä tai opiskele","8-7-title":"Ryhtyä välittömiin ja tehokkaisiin toimiin pakkotyön, modernin orjuuden ja ihmiskaupan poistamiseksi, varmistaa lapsityön pahimpien muotojen, kuten lapsisotilaiden värväämisen ja käytön, kieltäminen ja poistaminen sekä lopettaa lapsityö kaikissa muodoissaan vuoteen 2025 mennessä","8-8-title":"Suojata työelämän oikeuksia ja taata turvallinen työympäristö kaikille työntekijöille, mukaan lukien siirtotyöläisille, erityisesti naisille ja epävarmassa työsuhteessa oleville","8-9-title":"Lisätä kauppaa tukevaa kehitysapua kehitysmaille, erityisesti vähiten kehittyneille maille, esimerkiksi vähiten kehittyneille maille suunnattua kauppaan liittyvää teknistä apua koskevan laajennetun integroidun toimintakehyksen kautta","8-b-title":"Kehittää ja ottaa vuoteen 2020 mennessä käyttöön maailmanlaajuinen strategia nuorten työllistämiseksi ja panna ILOn kansainvälinen työllisyyssopimus täytäntöön","9-1-title":"Kehittää laadukasta, luotettavaa ja kestävää infrastruktuuria, kuten alueellista ja rajat ylittävää infrastruktuuria, taloudellisen kehityksen ja ihmisten hyvinvoinnin tueksi panostamalla sen edulliseen ja yhtäläiseen saantiin kaikille","9-2-title":"Edistää laajamittaista ja kestävää teollistumista ja nostaa vuoteen 2030 mennessä merkittävästi teollisuuden osuutta työllistäjänä ja bruttokansantuotteessa kansallisten olosuhteiden mukaisesti sekä tuplata sen osuus vähiten kehittyneissä maissa","9-3-title":"Lisätä pienimuotoisten teollisuus- ja muiden yritysten pääsyä rahoituspalvelujen, kuten edullisten luottojen, piiriin erityisesti kehitysmaissa ja niiden integroitumista arvoketjuihin sekä markkinoille","9-4-title":"Uudistaa vuoteen 2030 mennessä infrastruktuuria ja jälkiasennusaloja kestävän kehityksen mukaisiksi, tehostaa resurssien käyttöä ja lisätä puhtaiden sekä ympäristöystävällisten teknologioiden ja tuotantoprosessien käyttöönottoa jokaisen maan omien valmiuksien mukaisesti","9-5-title":"Lisätä tieteellistä tutkimusta, uudistaa teollisuudenalojen teknologisia valmiuksia kaikissa maissa, erityisesti kehitysmaissa, esimerkiksi kannustamalla innovointiin ja lisäämällä merkittävästi tutkimus- ja kehityshenkilöstön määrää miljoonaa ihmistä kohti sekä julkista ja yksityistä rahoitusta tutkimus- ja kehitystoimintaan vuoteen 2030 mennessä","9-a-title":"Mahdollistaa kestävä ja joustava infrastruktuurin kehittäminen kehitysmaissa Afrikan maille, vähiten kehittyneille maille, kehittyville sisämaavaltioille ja pienille kehittyville saarivaltioille tarjottavan tehostetun rahoituksellisen, teknologisen ja teknisen tuen avulla","9-b-title":"Tukea kehitysmaiden omaa teknologista kehitystä, tutkimusta ja innovaatioita esimerkiksi varmistamalla suotuisa toimintaympäristö teollisuuden monipuolistamiseksi ja hyödykkeiden jalostusarvon lisäämiseksi","9-c-title":"Lisätä merkittävästi tieto- ja viestintäteknologian saatavuutta ja pyrkiä tarjoamaan yhtäläinen ja edullinen Internetin käyttömahdollisuus vähiten kehittyneissä maissa vuoteen 2020 mennessä"},"goal":{"indicators_for_goal":"Tarkastele alatavoitteita ja indikaattoreita","next":"Seuraava tavoite","previous":"Edellinen tavoite"},"header":{"alpha":"Alpha","default_contrast":"Oletuskontrasti","disable_high_contrast":"Poista korkea kontrasti käytöstä","disclaimer":"Tämä on kehityssivusto. Toivotamme tervetulleeksi <a href=\"mailto:%email_contacts.suggestions\">feedback</a>.","enable_high_contrast":"Ota suuri kontrasti käyttöön","hide_menu":"Piilota navigointivalikko","high_contrast":"Korkea kontrasti","internet_explorer_message":"Olemme havainneet, että käytät Internet Exploreria vieraillaksesi tällä sivustolla. Microsoft on nyt poistamassa Internet Explorerin käytöstä. Tämän seurauksena tämä sivusto ei enää tue mitään Internet Explorerin versiota. Jotkut tämän sivuston ominaisuudet eivät toimi. Käytä nykyaikaista selainta, kuten Edge, Chromea, Firefoxia tai Safaria. Jos sinulla on vaikeuksia toisen selaimen asentamisessa tai käyttäminen, ota yhteyttä IT-tukitiimiisi.","internet_explorer_message_title":"Tätä Internet-selainta ei enää tueta","logo_title":"Mene kotisivulle","show_menu":"Näytä navigointivalikko","skip_link":"Siirry pääsisältöön","tag_line":"17 tavoitetta maailman muuttamiseksi","toggle_menu":"Valikon vaihto. Laajenna tai kutista valikko napsauttamalla.","toggle_search":"Haun kytkin. Napsauta laajentaaksesi tai kutistaaksesi hakupalkkia."},"indicator":{"annotation_2030_target":"2030 indikaattorin alatavoite","annotation_series_break":"Sarjan tauko","announce_data_added":"Kaavio ja taulukko päivitetty sisältämään tiedot.","announce_data_not_available":"Kaaviossa ja taulukossa ei ole tietoja.","announce_data_removed":"Kaavio ja taulukko päivitetty jättämään tiedot pois.","apply":"Käytä","cancel":"Peru","change_breakdowns":"Muuta erittelyjä","chart":"Valikko","chart_annotation":"Kaavion huomautus","clear_all":"Tyhjennä kaikki","clear_selections":"Tyhjennä valinnat","data_keyboard_navigation":"Paina enteriä selataksesi datapisteitä vasemmalla ja oikealla nuolinäppäimellä.","data_not_available":"Nämä tiedot eivät ole saatavilla. Valitse vaihtoehtoiset tiedot näytettäväksi.","data_tabular_alternative":"Taulukkotietovaihtoehto on Taulukko-välilehdessä.","dataset_size_warning":"Datajoukkoja on liian monta näytettäväksi kaaviossa. Kaikkia ei näytetä, ennen kuin poistat joitain valintoja.","download_chart":"Lataa kaaviotiedot(.csv)","download_chart_image":"Lataa kaaviokuva(.png)","download_chart_image_title":"Lataa kaaviokuva PNG-muodossa","download_csv":"Lataa tiedot (.csv)","download_csv_title":"Lataa tiedot CSV-muodossa","download_geojson":"Lataa karttatiedot (.geojson)","download_geojson_title":"Lataa karttatiedot GeoJSON-muodossa","download_headline":"Lataa otsikon tiedot (.csv)","download_headline_title":"Lataa otsikon tiedot CSV muodossa","download_source":"Lataa lähdetiedot (.csv)","download_source_for_disaggregations":"Lataa lähdetiedot kohteelle (.csv)","download_source_sdmx":"Lataa lähdetiedot SDMX (.xml)","download_source_sdmx_title":"Lataa lähdekoodi SDMX-muodossa","download_source_title":"Lataa lähdetiedot CSV-muodossa","download_table":"Lataa taulukkotiedot(.csv)","edit":"Muokkaa indikaattoria","edit_configuration":"Muokkaa kokoonpanoa","edit_data":"Muokkaa tietoja","edit_metadata":"Muokkaa Metadataa","empty_metadata_placeholder":"Ei saatavilla tälle indikaattorille","empty_metadata_placeholder_sources":"Ei saatavilla tälle lähteelle","footnote":"Alaviite","geographical_area":"Maantieteellinen alue","global_metadata":"Globaali Metadata","global_metadata_blurb":"Tämä taulukko sisältää tietoja SDG-indikaattoreiden metatiedoista YK:n määrittelemällä tavalla. <a href=\"https://unstats.un.org/sdgs/metadata/\">Complete global metadata</a> is provided by the UN Statistics Division.","headline_data":"Otsikon tiedot","legend_help":"Napsauta selitystä poistaaksesi yksittäisiä viivoja kaaviosta.","loading":"Latautuu","loading_map":"Ladataan karttaa","map":"Kartta","national_metadata":"Korkeakoulun Metadata","national_metadata_blurb":"Tämä taulukko sisältää metatiedot korkeakoulun määrittelemään indikaattoriin.","next":"Seuraava indikaattori","no_data_hint":"Ei vaihtoehtoja yllä olevien suodattimien vuoksi","no_headline_data":"Otsikon tietoja ei saatavilla","plot_legend_description":"Selitys: luettelo kaavioon sisältyvistä viivoista","previous":"Edellinen indikaattori","proxy":"Välityspalvelin","proxy_description":"Tämä indikaattori sisältää joitain vaihtoehtoisia tietoja Yhdistyneiden Kansakuntien (YK) määrittämille tiedoille. Tämä indikaattori on sopivin tällä hetkellä saatavilla oleva vastaavuus.","select_all":"Valitse kaikki","series":"Sarja","series_help":"Valitse luokat alla olevista avattavista valikoista nähdäksesi eri tietojen erittelyt. Jotkut eivät ole saatavilla ennen kuin ylempi taso on valittu.","source":"Lähde","sources":"Lähteet","status":"Indikaattorin tila","sub_categories":"Alakategoriat","sub_categories_show":"Näytä alakategoriat:","table":"Taulukko","table_column_sort":"Lajittele tämän sarakkeen mukaan napsauttamalla","tags":"Tunnisteet","total":"Kaikki yhteensä","unit":"Yksikkö","unit_of_measurement":"Mittayksikkö","units_type":"Yksikkötyyppi","variable_hint":"Käytettävissä, kun '%field' on valittuna","view_indicator_list":"Katso tämän tavoitteen indikaattoriluettelo"},"languages":{"en":"Englanti","fi":"Suomi"},"menu":{"about":"Yleistä","contact_us":"Ota yhteyttä","cookies":"Evästeet","faq":"FAQ","guidance":"Opastus","menu":"Valikko","publications":"Julkaisut","reporting_status":"Raportoinnin tila","updates":"Päivitykset"},"metadata_fields":{"ADJUSTMENT":"Säädöt","CLASS_SYSTEM":"Luokitukset","COLL_METHOD":"Tiedonkeruumenetelmä","COMPARABILITY":"Vertailukelpoisuus/poikkeama kansainvälisistä standardeista","COMPILING_ORG":"Tietojen kokoajat","CONTACT":"Tietojen toimittaja","CONTACT_EMAIL":"Sähköposti","CONTACT_FUNCT":"Yhteyshenkilön tehtävä","CONTACT_MAIL":"Sähköposti","CONTACT_NAME":"Yhteyshenkilö","CONTACT_ORGANISATION":"Organisaatio","CONTACT_PHONE":"Puhelinnumero","COVERAGE":"Tietojen saatavuus ja erittely","DATA_COMP":"Laskentamenetelmä","DATA_SOURCE":"Tietojen tarjoajat","DATA_VALIDATION":"Validointi","DOC_METHOD":"Maiden käytettävissä olevat menetelmät ja ohjeet tietojen keräämiseksi kansallisella tasolla","FREQ_COLL":"Tiedonkeruukalenteri","IMPUTATION":"Puuttuvien arvojen käsittely (i) maatasolla ja (ii) aluetasolla","IND_DEF_CON_CLASS":"Määritelmät, käsitteet ja luokitukset","INST_MANDATE":"Institutionaalinen mandaatti","META_LAST_UPDATE":"Metadatan päivitys","ORGANISATION_UNIT":"Organisaatioyksikkö","OTHER_DOC":"Viitteet ja dokumentaatio","OTHER_METHOD":"Muita metodologisia huomioita","QUALITY_ASSMNT":"Laadun arviointi","QUALITY_ASSURE":"Laatuvakuutus","QUALITY_MGMNT":"Laadunhallinta","RATIONALE":"Perustelut","REC_USE_LIM":"Kommentti ja rajoitukset","REG_AGG":"Alueelliset aggregaatiot","REL_CAL_POLICY":"Tiedonantokalenteri","SDG_CUSTODIAN_AGENCIES":"Kansainväliset organisaatiot, jotka vastaavat maailmanlaajuisesta seurannasta","SDG_GOAL":"Tavoite","SDG_INDICATOR":"Indikaattori","SDG_INDICATOR_INFO":"Indikaattorin tieto","SDG_RELATED_INDICATORS":"Asiaan liittyvät indikaattorit","SDG_SERIES_DESCR":"Sarja","SDG_TARGET":"Alatavoite","SOURCE_TYPE":"Tietolähteet","SRC_TYPE_COLL_METHOD":"Tietolähteen tyyppi ja keruutapa","STAT_CONC_DEF":"Määritelmät ja käsitteet","UNIT_MEASURE":"Mittayksikkö","comments_limitations":"Kommentit ja rajoitukset","computation_calculations":"Laskelmat","computation_definitions":"Määritelmät","computation_units":"Mittayksikkö","copyright":"Tekijänoikeus","goal_meta_link":"Linkki YK:n metatietoihin","indicator":"Indikaattorin numero","indicator_definition":"Globaali indikaattorin kuvaus","indicator_name":"Indikaattorin numero","indicator_sort_order":"Indikaattorin näyttöjärjestys (within Goal page)","international_comparability":"Vertailukelpoisuus kansainvälisten tietojen/standardien kanssa","national_data_update_url":"Tiedot päivitetty viimeksi","national_geographical_coverage":"Maantieteellinen kattavuus","national_indicator_available":"Indikaattori saatavilla","national_indicator_description":"Indikaattorin kuvaus","national_metadata_update_url":"Metadata päivitetty viimeksi","other_info":"Muita tietoja","quality_assurance":"Laatuvakuutus","rational_interpretation":"Rationaalinen ja tulkinta","rationale_interpretation":"Rationaalinen ja tulkinta","source_contact_1":"Yhteystiedot","source_contact_2":"Yhteystiedot","source_contact_3":"Yhteystiedot","source_contact_4":"Yhteystiedot","source_contact_5":"Yhteystiedot","source_contact_6":"Yhteystiedot","source_earliest_available_1":"Varhaisimmat saatavilla olevat tiedot","source_earliest_available_2":"Varhaisimmat saatavilla olevat tiedot","source_earliest_available_3":"Varhaisimmat saatavilla olevat tiedot","source_earliest_available_4":"Varhaisimmat saatavilla olevat tiedot","source_earliest_available_5":"Varhaisimmat saatavilla olevat tiedot","source_earliest_available_6":"Varhaisimmat saatavilla olevat tiedot","source_geographical_coverage_1":"Maantieteellinen kattavuus","source_geographical_coverage_2":"Maantieteellinen kattavuus","source_geographical_coverage_3":"Maantieteellinen kattavuus","source_geographical_coverage_4":"Maantieteellinen kattavuus","source_geographical_coverage_5":"Maantieteellinen kattavuus","source_geographical_coverage_6":"Maantieteellinen kattavuus","source_next_release_1":"Maantieteellinen kattavuus","source_next_release_2":"Seuraava julkaisu","source_next_release_3":"Seuraava julkaisu","source_next_release_4":"Seuraava julkaisu","source_next_release_5":"Seuraava julkaisu","source_next_release_6":"Seuraava julkaisu","source_organisation_1":"Organisaatio","source_organisation_2":"Organisaatio","source_organisation_3":"Organisaatio","source_organisation_4":"Organisaatio","source_organisation_5":"Organisaatio","source_organisation_6":"Organisaatio","source_other_info_1":"Muita tietoja","source_other_info_2":"Muita tietoja","source_other_info_3":"Muita tietoja","source_other_info_4":"Muita tietoja","source_other_info_5":"Muita tietoja","source_other_info_6":"Muita tietoja","source_periodicity_1":"Jaksoisuus","source_periodicity_2":"Jaksoisuus","source_periodicity_3":"Jaksoisuus","source_periodicity_4":"Jaksoisuus","source_periodicity_5":"Jaksoisuus","source_periodicity_6":"Jaksoisuus","source_release_date_1":"Julkaisupäivä","source_release_date_2":"Julkaisupäivä","source_release_date_3":"Julkaisupäivä","source_release_date_4":"Julkaisupäivä","source_release_date_5":"Julkaisupäivä","source_release_date_6":"Julkaisupäivä","source_statistical_classification_1":"Tilastollinen luokitus","source_statistical_classification_2":"Tilastollinen luokitus","source_statistical_classification_3":"Tilastollinen luokitus","source_statistical_classification_4":"Tilastollinen luokitus","source_statistical_classification_5":"Tilastollinen luokitus","source_statistical_classification_6":"Tilastollinen luokitus","source_url_1":"Linkki tietolähteeseen","source_url_2":"Linkki tietolähteeseen","source_url_3":"Linkki tietolähteeseen","source_url_4":"Linkki tietolähteeseen","source_url_5":"Linkki tietolähteeseen","source_url_6":"Linkki tietolähteeseen","target":"Tavoitteen nimi","target_id":"Tavoitteen numero","un_custodian_agency":"UN custodian agency","un_designated_tier":"YK:n määrittelemä taso"},"post":{"posts_by_category":"Viestit kategorioittain","view_all_in_category":"Näytä kaikki viestit %category_name category"},"search":{"adjust_your_search":"Yritä muokata hakuasi löytääksesi etsimäsi.","did_you_mean":"tarkoititko","found_in":"Löydetty","indicator_search":"Indikaattorihaku","keywords":"Avainsanat","no_results":"Ei tuloksia","results_found":"Tuloksia löydetty","search":"Haku","search_results_for":"Etsi tuloksia","site_search":"Sivustohaku"},"status":{"description":"Raportoinnin tila antaa yleiskuvan siitä, miten paljon kestävän kehityksen tavoitteiden (SDG) dataa Savonia raportoi.","disaggregation_status":"Erittelytila","disaggregation_status_by_field":"Erittely %field","disaggregation_status_complete":"Täysin eritelty","disaggregation_status_inprogress":"Osittain eritelty","disaggregation_status_notapplicable":"Out of scope","disaggregation_status_notstarted":"Ei eritelty","disaggregation_status_overall":"Yleinen erittelytila","exploring_data_sources":"Tietolähteiden tutkiminen","in_progress":"Käynnissä","no_data_available":"Tietoja ei ole saatavilla","not_applicable":"Ei sovellettavissa","not_specified":"Ei määritelty","overall_reporting_status":"Raportoinnin tila yleensä ottaen","progress_approaching_target":"Lähestymässä alatavoitetta","progress_challenges_remain":"Haasteita on vielä","progress_help":"Miten pärjäämme vuoden 2030 tavoitteessa?","progress_not_available":"Ei saatavilla","progress_status":"Edistymisen tila","progress_target_achieved":"Alatavoite saavutettu","reported":"Raportoitu","reported_online":"Raportoitu netissä","reporting_status":"Raportoinnon tila","status_by_field":"Tila %field mukaan","status_by_goal":"Tila tavoitteen mukaan"},"units":{"co2":"CO2-päästöt (kt)","customer_satisfaction":"Asiakastyytyväisyys","gptw_index":"GPTW-indeksi","percentage":"Prosenttiosuus (%)","total":"Yhteensä","total_number":"Kokonaismäärä","unavailable":"Ei saatavilla"}};
+
+    // Dynamic filtering functionality.
+    var configSearch = document.getElementById('config-search');
+    var configSearchButton = document.getElementById('config-search-button');
+    var configResetButton = document.getElementById('config-reset-button');
+    var resultsStatus = document.getElementById('results-status');
+    var itemSelector = 'div[data-schemapath="root"] > .well > div > div > .row';
+    configSearchButton.addEventListener('click', performSearch);
+    configSearch.addEventListener('keyup', function(e) {
+      if (e.key === "Enter") {
+        performSearch();
+      }
+    });
+    configResetButton.addEventListener('click', resetSearch);
+    function performSearch() {
+      var keywords = configSearch.value.toLowerCase();
+      var numResults = 0;
+      if (keywords.length > 0) {
+        var noMatches = true;
+        $(itemSelector).each(function(item) {
+          var title = $(this).find('label').first().text().toLowerCase();
+          if (title.includes(keywords)) {
+            noMatches = false;
+            $(this).show();
+            numResults += 1;
+          }
+          else {
+            $(this).hide();
+          }
+        });
+        if (noMatches) {
+          $(resultsStatus).text('There are no settings that match those keywords.');
+        }
+        else {
+          var settingsText = (numResults > 1) ? 'settings' : 'setting';
+          $(resultsStatus).text(numResults + ' matching ' + settingsText + ' found.');
+        }
+      }
+      else {
+        resetSearch();
+      }
+    };
+    function resetSearch() {
+      configSearch.value = '';
+      $(resultsStatus).text('');
+      $(itemSelector).show();
+    }
+
+    
+    
+    var schema = {"type":"object","title":"Edit Metadata","properties":{"SDG_INDICATOR_INFO":{"type":"string","format":"markdown","title":"Indicator information","description":"Scope: national, Field: SDG_INDICATOR_INFO"},"SDG_GOAL":{"type":"string","format":"markdown","title":"Goal","description":"Scope: national, Field: SDG_GOAL"},"SDG_TARGET":{"type":"string","format":"markdown","title":"Target","description":"Scope: national, Field: SDG_TARGET"},"SDG_INDICATOR":{"type":"string","format":"markdown","title":"Indicator","description":"Scope: national, Field: SDG_INDICATOR"},"SDG_SERIES_DESCR":{"type":"string","format":"markdown","title":"Series","description":"Scope: national, Field: SDG_SERIES_DESCR"},"META_LAST_UPDATE":{"type":"string","format":"markdown","title":"Metadata update","description":"Scope: national, Field: META_LAST_UPDATE"},"SDG_RELATED_INDICATORS":{"type":"string","format":"markdown","title":"Related indicators","description":"Scope: national, Field: SDG_RELATED_INDICATORS"},"CONTACT":{"type":"string","format":"markdown","title":"Data reporter","description":"Scope: national, Field: CONTACT"},"CONTACT_ORGANISATION":{"type":"string","format":"markdown","title":"Organisation","description":"Scope: national, Field: CONTACT_ORGANISATION"},"CONTACT_NAME":{"type":"string","format":"markdown","title":"Contact person(s)","description":"Scope: national, Field: CONTACT_NAME"},"ORGANISATION_UNIT":{"type":"string","format":"markdown","title":"Contact organisation unit","description":"Scope: national, Field: ORGANISATION_UNIT"},"CONTACT_FUNCT":{"type":"string","format":"markdown","title":"Contact person function","description":"Scope: national, Field: CONTACT_FUNCT"},"CONTACT_PHONE":{"type":"string","format":"markdown","title":"Contact phone","description":"Scope: national, Field: CONTACT_PHONE"},"CONTACT_MAIL":{"type":"string","format":"markdown","title":"Contact mail","description":"Scope: national, Field: CONTACT_MAIL"},"CONTACT_EMAIL":{"type":"string","format":"markdown","title":"Contact email","description":"Scope: national, Field: CONTACT_EMAIL"},"IND_DEF_CON_CLASS":{"type":"string","format":"markdown","title":"Definition, concepts, and classifications","description":"Scope: national, Field: IND_DEF_CON_CLASS"},"STAT_CONC_DEF":{"type":"string","format":"markdown","title":"Definition and concepts","description":"Scope: national, Field: STAT_CONC_DEF"},"UNIT_MEASURE":{"type":"string","format":"markdown","title":"Unit of measure","description":"Scope: national, Field: UNIT_MEASURE"},"CLASS_SYSTEM":{"type":"string","format":"markdown","title":"Classifications","description":"Scope: national, Field: CLASS_SYSTEM"},"SRC_TYPE_COLL_METHOD":{"type":"string","format":"markdown","title":"Data source type and collection method","description":"Scope: national, Field: SRC_TYPE_COLL_METHOD"},"SOURCE_TYPE":{"type":"string","format":"markdown","title":"Data sources","description":"Scope: national, Field: SOURCE_TYPE"},"COLL_METHOD":{"type":"string","format":"markdown","title":"Data collection method","description":"Scope: national, Field: COLL_METHOD"},"FREQ_COLL":{"type":"string","format":"markdown","title":"Data collection calendar","description":"Scope: national, Field: FREQ_COLL"},"REL_CAL_POLICY":{"type":"string","format":"markdown","title":"Data release calendar","description":"Scope: national, Field: REL_CAL_POLICY"},"DATA_SOURCE":{"type":"string","format":"markdown","title":"Data providers","description":"Scope: national, Field: DATA_SOURCE"},"COMPILING_ORG":{"type":"string","format":"markdown","title":"Data compilers","description":"Scope: national, Field: COMPILING_ORG"},"INST_MANDATE":{"type":"string","format":"markdown","title":"Institutional mandate","description":"Scope: national, Field: INST_MANDATE"},"OTHER_METHOD":{"type":"string","format":"markdown","title":"Other methodological considerations","description":"Scope: national, Field: OTHER_METHOD"},"RATIONALE":{"type":"string","format":"markdown","title":"Rationale","description":"Scope: national, Field: RATIONALE"},"REC_USE_LIM":{"type":"string","format":"markdown","title":"Comment and limitations","description":"Scope: national, Field: REC_USE_LIM"},"DATA_COMP":{"type":"string","format":"markdown","title":"Method of computation","description":"Scope: national, Field: DATA_COMP"},"DATA_VALIDATION":{"type":"string","format":"markdown","title":"Validation","description":"Scope: national, Field: DATA_VALIDATION"},"DOC_METHOD":{"type":"string","format":"markdown","title":"Methods and guidance available to countries for the compilation of the data at the national level","description":"Scope: national, Field: DOC_METHOD"},"QUALITY_MGMNT":{"type":"string","format":"markdown","title":"Quality management","description":"Scope: national, Field: QUALITY_MGMNT"},"QUALITY_ASSURE":{"type":"string","format":"markdown","title":"Quality assurance","description":"Scope: national, Field: QUALITY_ASSURE"},"QUALITY_ASSMNT":{"type":"string","format":"markdown","title":"Quality assessment","description":"Scope: national, Field: QUALITY_ASSMNT"},"COVERAGE":{"type":"string","format":"markdown","title":"Data availability and disaggregation","description":"Scope: national, Field: COVERAGE"},"COMPARABILITY":{"type":"string","format":"markdown","title":"Comparability/deviation from international standards","description":"Scope: national, Field: COMPARABILITY"},"OTHER_DOC":{"type":"string","format":"markdown","title":"References and Documentation","description":"Scope: national, Field: OTHER_DOC"},"national_data_updated_date":{"type":"string","format":"markdown","title":"Data last updated","description":"Scope: national, Field: national_data_updated_date"},"national_metadata_updated_date":{"type":"string","format":"markdown","title":"Metadata last updated","description":"Scope: national, Field: national_metadata_updated_date"}},"additionalProperties":true};
+    
+      
+        
+      
+    
+
+    function normalizeCurrentValue(key, value) {
+      // This space for backwards-compat fixes.
+      return value;
+    }
+
+    // Change the theme to create div instead of H3 elements for headers.
+    JSONEditor.defaults.themes.bootstrap3.prototype.getHeader = function(text) {
+      var el = document.createElement('div')
+      if (typeof text === 'string') {
+        el.textContent = text;
+      } else {
+        el.appendChild(text);
+      }
+      el.classList.add('je-header');
+      return el;
+    }
+
+    var editor = new JSONEditor(document.getElementById('editor_holder'), {
+      theme: 'bootstrap3',
+      iconlib: 'fontawesome4',
+      disable_array_delete_all_rows: true,
+      disable_array_delete_last_row: true,
+      disable_array_reorder: true,
+      disable_edit_json: true,
+      disable_properties: true,
+      required_by_default: true,
+
+      // The schema for the editor
+      schema: schema
+    });
+
+    function collapseButtonClick() {
+      var title = this.getAttribute('title');
+      this.setAttribute('aria-expanded', title === 'Collapse');
+      var ariaLabel = this.getAttribute('aria-label');
+      if (title === 'Collapse') {
+        ariaLabel = ariaLabel.replace('Expand', 'Collapse');
+      }
+      else {
+        ariaLabel = ariaLabel.replace('Collapse', 'Expand');
+      }
+      this.setAttribute('aria-label', ariaLabel);
+    }
+
+    function propertyEditorTranslationLinks(propertyEditor) {
+      try {
+        if (typeof propertyEditor.value === 'undefined') {
+          return;
+        }
+        switch (propertyEditor.schema.type) {
+          case 'string':
+            if (isTranslationKey(propertyEditor.value)) {
+              addTranslationLink(propertyEditor);
+            }
+            break;
+          case 'array':
+          case 'object':
+            if (typeof propertyEditor.editors !== 'undefined') {
+              var editorKeys = Object.keys(propertyEditor.editors);
+              for (var i = 0; i < editorKeys.length; i++) {
+                var editorKey = editorKeys[i];
+                propertyEditorTranslationLinks(propertyEditor.editors[editorKey]);
+              }
+            }
+            if (typeof propertyEditor.rows !== 'undefined') {
+              for (var i = 0; i < propertyEditor.rows.length; i++) {
+                propertyEditorTranslationLinks(propertyEditor.rows[i]);
+              }
+            }
+            break;
+        }
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to add translation links: ' + propertyEditor.formname);
+      }
+    }
+
+    function propertyEditorAccessibilityFixes(propertyEditor) {
+      try {
+        // Variety of accessibility fixes.
+        switch (propertyEditor.schema.type) {
+          case 'string':
+          case 'integer':
+          case 'boolean':
+          case 'number':
+            propertyEditor.input.setAttribute('id', propertyEditor.formname);
+            propertyEditor.label.setAttribute('for', propertyEditor.formname);
+            if (typeof propertyEditor.description !== 'undefined') {
+              var descriptionId = propertyEditor.formname + '-description';
+              propertyEditor.description.setAttribute('id', descriptionId);
+              propertyEditor.input.setAttribute('aria-describedby', descriptionId);
+            }
+            break;
+          case 'array':
+          case 'object':
+            var toggleButton = (propertyEditor.schema.type === 'array') ? propertyEditor.toggle_button : propertyEditor.collapse_control;
+            var headerId = propertyEditor.formname + '-header';
+            propertyEditor.header.setAttribute('id', headerId);
+            var headerText = propertyEditor.header.innerHTML;
+            if (typeof propertyEditor.description !== 'undefined') {
+              var descriptionId = propertyEditor.formname + '-description';
+              propertyEditor.description.setAttribute('id', descriptionId);
+            }
+            if (typeof toggleButton !== 'undefined') {
+              toggleButton.setAttribute('aria-label', 'Activate to Collapse the ' + headerText + ' section.')
+              collapseButtonClick.call(toggleButton);
+              toggleButton.addEventListener('click', collapseButtonClick);
+              if (typeof propertyEditor.description !== 'undefined') {
+                toggleButton.setAttribute('aria-describedby', descriptionId);
+              }
+            }
+            if (typeof propertyEditor.editors !== 'undefined') {
+              var editorKeys = Object.keys(propertyEditor.editors);
+              for (var i = 0; i < editorKeys.length; i++) {
+                var editorKey = editorKeys[i];
+                propertyEditorAccessibilityFixes(propertyEditor.editors[editorKey]);
+              }
+            }
+            if (typeof propertyEditor.rows !== 'undefined') {
+              for (var i = 0; i < propertyEditor.rows.length; i++) {
+                propertyEditorAccessibilityFixes(propertyEditor.rows[i]);
+              }
+            }
+            break;
+        }
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to do accessibility fixes: ' + propertyEditor.formname);
+      }
+    }
+
+    // Set values according to this site's configuration.
+    
+      try {
+        var currentValue = normalizeCurrentValue('SDG_INDICATOR_INFO', "");
+        var propertyEditor = editor.getEditor('root.SDG_INDICATOR_INFO');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: SDG_INDICATOR_INFO');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.SDG_INDICATOR_INFO'));
+
+    
+      try {
+        var currentValue = normalizeCurrentValue('SDG_GOAL', "global_goals.2-title");
+        var propertyEditor = editor.getEditor('root.SDG_GOAL');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: SDG_GOAL');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.SDG_GOAL'));
+
+    
+      try {
+        var currentValue = normalizeCurrentValue('SDG_TARGET', "global_targets.2-4-title");
+        var propertyEditor = editor.getEditor('root.SDG_TARGET');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: SDG_TARGET');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.SDG_TARGET'));
+
+    
+      try {
+        var currentValue = normalizeCurrentValue('SDG_INDICATOR', "global_indicators.2-4-1-title");
+        var propertyEditor = editor.getEditor('root.SDG_INDICATOR');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: SDG_INDICATOR');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.SDG_INDICATOR'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.SDG_SERIES_DESCR'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.META_LAST_UPDATE'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.SDG_RELATED_INDICATORS'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.CONTACT'));
+
+    
+      try {
+        var currentValue = normalizeCurrentValue('CONTACT_ORGANISATION', "Savonia University of Applied Sciences");
+        var propertyEditor = editor.getEditor('root.CONTACT_ORGANISATION');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: CONTACT_ORGANISATION');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.CONTACT_ORGANISATION'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.CONTACT_NAME'));
+
+    
+      try {
+        var currentValue = normalizeCurrentValue('ORGANISATION_UNIT', "");
+        var propertyEditor = editor.getEditor('root.ORGANISATION_UNIT');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: ORGANISATION_UNIT');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.ORGANISATION_UNIT'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.CONTACT_FUNCT'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.CONTACT_PHONE'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.CONTACT_MAIL'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.CONTACT_EMAIL'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.IND_DEF_CON_CLASS'));
+
+    
+      try {
+        var currentValue = normalizeCurrentValue('STAT_CONC_DEF', "");
+        var propertyEditor = editor.getEditor('root.STAT_CONC_DEF');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: STAT_CONC_DEF');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.STAT_CONC_DEF'));
+
+    
+      try {
+        var currentValue = normalizeCurrentValue('UNIT_MEASURE', "units.co2");
+        var propertyEditor = editor.getEditor('root.UNIT_MEASURE');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: UNIT_MEASURE');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.UNIT_MEASURE'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.CLASS_SYSTEM'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.SRC_TYPE_COLL_METHOD'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.SOURCE_TYPE'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.COLL_METHOD'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.FREQ_COLL'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.REL_CAL_POLICY'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.DATA_SOURCE'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.COMPILING_ORG'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.INST_MANDATE'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.OTHER_METHOD'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.RATIONALE'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.REC_USE_LIM'));
+
+    
+      try {
+        var currentValue = normalizeCurrentValue('DATA_COMP', "CO2 emission from agriculture in the North Savo region");
+        var propertyEditor = editor.getEditor('root.DATA_COMP');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: DATA_COMP');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.DATA_COMP'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.DATA_VALIDATION'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.DOC_METHOD'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.QUALITY_MGMNT'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.QUALITY_ASSURE'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.QUALITY_ASSMNT'));
+
+    
+      try {
+        var currentValue = normalizeCurrentValue('COVERAGE', "");
+        var propertyEditor = editor.getEditor('root.COVERAGE');
+        propertyEditor.setValue(null);
+        propertyEditor.setValue(currentValue);
+        
+      }
+      catch (e) {
+        console.log(e.message);
+        console.log('Unable to set config key: COVERAGE');
+      }
+    propertyEditorAccessibilityFixes(editor.getEditor('root.COVERAGE'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.COMPARABILITY'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.OTHER_DOC'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.national_data_updated_date'));
+
+    propertyEditorAccessibilityFixes(editor.getEditor('root.national_metadata_updated_date'));
+
+    
+
+    function isTranslationKey(text) {
+      var parts = text.split('.');
+      if (parts.length !== 2) {
+        return false;
+      }
+      if (typeof allTranslations[parts[0]] === 'undefined') {
+        return false;
+      }
+      if (typeof allTranslations[parts[0]][parts[1]] === 'undefined') {
+        return false;
+      }
+      return true;
+    }
+
+    function addTranslationLink(propertyEditor) {
+      var parts = propertyEditor.value.split('.');
+      var translationLink = '';
+      translationLink = translationLink.replace('[id]', '2-4-1');
+      translationLink = translationLink.replace('[group]', parts[0]);
+      translationLink = translationLink.replace('[key]', parts[1]);
+      translationLink = translationLink.replace('[language]', 'fi');
+      var element = document.createElement('a');
+      element.setAttribute('target', '_blank');
+      element.setAttribute('href', translationLink);
+      element.setAttribute('class', 'translation-link');
+      element.innerHTML = 'Go to translation for ' + propertyEditor.key;
+      propertyEditor.addLink(element);
+    }
+
+    function SaveAsFile(t,f,m) {
+      try {
+        var b = new Blob([t],{type:m});
+        saveAs(b, f);
+      } catch (e) {
+        window.open("data:"+m+"," + encodeURIComponent(t), '_blank','');
+      }
+    }
+
+    document.getElementById('export').addEventListener('click', function() {
+      var errors = editor.validate();
+      if (errors.length) {
+        var alertText = 'Please correct the errors listed below';
+        var fieldNames = []
+        for (i = 0; i < errors.length; i++) {
+          var error = errors[i];
+          fieldNames.push(error.path.replace('root.', ''));
+        }
+        alert(alertText + ' (' + fieldNames.join(', ') + ').');
+      }
+      else {
+        var config = editor.getValue();
+        var yaml = jsyaml.safeDump(config);
+        SaveAsFile(yaml, '2-4-1.yml', 'text/plain;charset=utf-8');
+      }
+    });
+
+    function addNewTabMessage(link) {
+      if (!link.querySelector('.sr-only')) {
+        link.insertAdjacentHTML('beforeend', ' <span>(opens in a new tab)</span>');
+      }
+    }
+
+    document.querySelectorAll('a[target="_blank"]').forEach(function(link) {
+      addNewTabMessage(link);
+    });
+  </script>
+</div>
+<footer role="contentinfo">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-9">
+                <div class="eu-logo">
+                    <img src="/scorecard-site/assets/img/eu_logo.png" alt="EU co-funded logo" class="uv-logo" />
+                </div>
+                <p id="disclaimer" class="footer-text">The cooperation project (2021-1-ES01-KA220-HED-000029950) has
+                    been
+                    funded
+                    with
+                    support from the European Commission. This website reflects the views only of the author, and the
+                    Commission
+                    cannot be held responsible for any use which may be made of the information contained therein.</p>
+
+            </div>
+            <div class="col-md-3">
+                <div id="footer-links">
+                    <ul>
+                        <li>
+                            <a href="https://open-sdg.org">Rakennettu Open SDG:llä</a>
+                        </li>
+                        
+                        <li>
+                            <a href="/scorecard-site/fi/about/cookies-and-privacy/">Evästeet</a>
+                            
+                        </li>
+                        
+                        
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+</footer>
+<script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script src="//cdn.datatables.net/fixedcolumns/3.2.3/js/dataTables.fixedColumns.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js" integrity="sha256-Y26AMvaIfrZ1EQU49pf6H4QzVTrOI8m9wQYKkftBt4s=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/patternomaly@1.3.2/dist/patternomaly.js"></script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/autotrack/2.4.1/autotrack.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.0.0-rc.3/dist/html2canvas.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.2/dist/FileSaver.min.js"></script>
+
+
+
+
+
+
+
+<script>translations['general'] = translations['general'] || {};
+    translations['general']['hide'] = 'piilota';</script>
+
+<script>translations['search'] = translations['search'] || {};
+    translations['search']['search'] = 'Haku';</script>
+
+<script src='/scorecard-site/assets/js/sdg.js?v=20231031172334'></script>
+
+
+    
+    
+    <script src="/scorecard-site/assets/js/custom.js?v=20231031172334"></script><script>
+    new indicatorInit();
+    new accessibilitySwitcher();
+</script>
+
+
+</body>
+
+</html>

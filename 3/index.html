@@ -143,7 +143,7 @@ var translations = {
         <link res="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
         <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" crossorigin="">
         <link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/3.2.3/css/fixedColumns.dataTables.min.css" crossorigin="">
-        <link rel="stylesheet" href="/scorecard-site/assets/css/style.css?v=20230925200858">
+        <link rel="stylesheet" href="/scorecard-site/assets/css/style.css?v=20231031172334">
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
           integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
           crossorigin=""/>
@@ -217,7 +217,37 @@ layout-goal
 </form>
 
                     </div>
-                    <div class="header-toggles d-flex align-items-center"><a title="Enable high contrast" aria-label="Enable high contrast"
+                    <div class="header-toggles d-flex align-items-center">
+
+
+
+
+
+  <div class="language-toggle-container">
+  
+  <div class="btn-group language-toggle-dropdown  dropdown">
+    <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      <i class="fa fa-globe"></i>
+      English
+    </button>
+    <ul class="dropdown-menu"><li>
+            <a class="dropdown-item" href="/scorecard-site/fi/3/">
+              Finnish
+            </a>
+          </li></ul>
+  </div>
+</div>
+
+
+
+                        <span class="no-js-language-toggle"><div class="language-toggle-container d-flex">
+    <i class="fa fa-globe language-toggle-globe-links"></i>
+    <ul class="language-toggle-links list-unstyled list-inline"><li class="language-option-fi list-inline-item">
+            <a class="language-toggle-link" href="/scorecard-site/fi/3/">
+                Finnish
+            </a>
+        </li></ul>
+</div></span><a title="Enable high contrast" aria-label="Enable high contrast"
     data-contrast-switch-to="" href="javascript:void(0)" data-on="click"
 data-event-category="Accessibility"
 data-event-action="Change contrast setting"
@@ -281,7 +311,7 @@ data-event-label="high"
     <div class="container">
         <div class="row">
             <div class="col-4 col-md-3 col-lg-2 goal-icon goal-tiles">
-                <img src="https://open-sdg.org/sdg-translations/assets/img/goals/en/3.png" alt="Good health and well-being - Goal 3" id="goal-3" class="goal-icon-image goal-icon-image-" />
+                <img src="https://github.com/SAVONIA-USD/scorecard-site/assets/img/goals/en/3.png" alt="Good health and well-being - Goal 3" id="goal-3" class="goal-icon-image goal-icon-image-" />
             </div>
             <div class="col-8 col-md-9 col-lg-10 goal-details">
                 <h1>
@@ -529,12 +559,12 @@ data-event-label="high"
 <script>translations['search'] = translations['search'] || {};
     translations['search']['search'] = 'Search';</script>
 
-<script src='/scorecard-site/assets/js/sdg.js?v=20230925200858'></script>
+<script src='/scorecard-site/assets/js/sdg.js?v=20231031172334'></script>
 
 
     
     
-    <script src="/scorecard-site/assets/js/custom.js?v=20230925200858"></script><script>
+    <script src="/scorecard-site/assets/js/custom.js?v=20231031172334"></script><script>
     new indicatorInit();
     new accessibilitySwitcher();
 </script>

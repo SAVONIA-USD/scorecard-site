@@ -1463,16 +1463,16 @@ body.contrast-high .proxy-pill {
   .status.notstarted {
     color: #0b0c0c;
     border: 1px solid #0b0c0c;
-    background-color: #f487b2;
-    background: #f487b2; }
+    background-color: #ffe3f3;
+    background: #ffe3f3; }
     .status.notstarted .status-inner {
-      background-color: #f487b2;
-      background: #f487b2; }
+      background-color: #ffe3f3;
+      background: #ffe3f3; }
   .status.notapplicable {
     color: #0b0c0c;
     border: 1px solid #0b0c0c;
-    background-color: repeating-linear-gradient(135deg, #f487b2, #EF5E99 10px, #f487b2 10px, #EF5E99 20px);
-    background: repeating-linear-gradient(135deg, #f487b2, #EF5E99 10px, #f487b2 10px, #EF5E99 20px); }
+    background-color: repeating-linear-gradient(135deg, #ffe3f3, #EF5E99 10px, #ffe3f3 10px, #EF5E99 20px);
+    background: repeating-linear-gradient(135deg, #ffe3f3, #EF5E99 10px, #ffe3f3 10px, #EF5E99 20px); }
     .status.notapplicable .status-inner {
       background-color: rgba(255, 255, 255, 0.8);
       background: rgba(255, 255, 255, 0.8); }
@@ -1778,16 +1778,16 @@ body.contrast-high .indicator.goal-banner .goal-tiles img {
     .layout-reportingstatus #main-content .statuses > div .status.notstarted {
       color: #0b0c0c;
       border: 1px solid #0b0c0c;
-      background-color: #f487b2;
-      background: #f487b2; }
+      background-color: #ffe3f3;
+      background: #ffe3f3; }
       .layout-reportingstatus #main-content .statuses > div .status.notstarted .status-inner {
-        background-color: #f487b2;
-        background: #f487b2; }
+        background-color: #ffe3f3;
+        background: #ffe3f3; }
     .layout-reportingstatus #main-content .statuses > div .status.notapplicable {
       color: #0b0c0c;
       border: 1px solid #0b0c0c;
-      background-color: repeating-linear-gradient(135deg, #f487b2, #EF5E99 10px, #f487b2 10px, #EF5E99 20px);
-      background: repeating-linear-gradient(135deg, #f487b2, #EF5E99 10px, #f487b2 10px, #EF5E99 20px); }
+      background-color: repeating-linear-gradient(135deg, #ffe3f3, #EF5E99 10px, #ffe3f3 10px, #EF5E99 20px);
+      background: repeating-linear-gradient(135deg, #ffe3f3, #EF5E99 10px, #ffe3f3 10px, #EF5E99 20px); }
       .layout-reportingstatus #main-content .statuses > div .status.notapplicable .status-inner {
         background-color: rgba(255, 255, 255, 0.8);
         background: rgba(255, 255, 255, 0.8); }
@@ -1811,11 +1811,11 @@ body.contrast-high .indicator.goal-banner .goal-tiles img {
     height: 10px;
     font-weight: bold; }
   .layout-reportingstatus #main-content .goal-stats .notapplicable {
-    background-color: repeating-linear-gradient(135deg, #f487b2, #EF5E99 10px, #f487b2 10px, #EF5E99 20px);
-    background: repeating-linear-gradient(135deg, #f487b2, #EF5E99 10px, #f487b2 10px, #EF5E99 20px); }
+    background-color: repeating-linear-gradient(135deg, #ffe3f3, #EF5E99 10px, #ffe3f3 10px, #EF5E99 20px);
+    background: repeating-linear-gradient(135deg, #ffe3f3, #EF5E99 10px, #ffe3f3 10px, #EF5E99 20px); }
   .layout-reportingstatus #main-content .goal-stats .notstarted {
-    background-color: #f487b2;
-    background: #f487b2; }
+    background-color: #ffe3f3;
+    background: #ffe3f3; }
   .layout-reportingstatus #main-content .goal-stats .inprogress {
     background-color: #757575;
     background: #757575; }
