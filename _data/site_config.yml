@@ -1,4 +1,4 @@
-﻿analytics:
+analytics:
   ua: ''
   gtag: ''
   gtm: ''
@@ -91,7 +91,7 @@ frontpage_goals_grid:
 frontpage_introduction_banner:
   title: frontpage.intro_title
   description: frontpage.intro_body
-goal_image_base: "https://open-sdg.org/sdg-translations/assets/img/goals"
+goal_image_base: "/assets/img/goals"
 goal_image_extension: ''
 goals_page:
   title: general.goals
@@ -132,6 +132,7 @@ indicator_tabs:
   tab_4: ''
 languages:
   - en
+  - fi
 languages_public: []
 logos: []
 map_layers: []
