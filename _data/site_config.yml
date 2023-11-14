@@ -91,7 +91,7 @@ frontpage_goals_grid:
 frontpage_introduction_banner:
   title: frontpage.intro_title
   description: frontpage.intro_body
-goal_image_base: "https://github.com/SAVONIA-USD/scorecard-site/assets/img/goals"
+goal_image_base: "https://savonia-usd.github.io/scorecard-site/assets/img/goals"
 goal_image_extension: ''
 goals_page:
   title: general.goals
@@ -193,9 +193,9 @@ metadata_tabs:
   #   title: indicator.sources
   #   description: ''
   - scope: related_targets
-    title: Related targets
-    description: Other related targets to this indicator
-    placeholder: There are no other targets related to this indicator
+    title: indicator.related_targets
+    description: indicator.related_targets_blurb
+    placeholder: indicator.related_targets_placeholder
 news:
   category_links: false
 progress_status:
